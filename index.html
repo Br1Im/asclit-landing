@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Asclit — вся медицина в одном курсе</title>
 <meta name="description" content="Полный курс медицины: все предметы, интерактивные 3D-модели органов и ИИ-наставник в одном месте. Понимай, а не зубри."/>
+<link rel="canonical" href="https://br1im.github.io/asclit-landing/"/>
+<meta name="theme-color" content="#f4f3f0"/>
+<!-- Open Graph -->
+<meta property="og:type" content="website"/>
+<meta property="og:locale" content="ru_RU"/>
+<meta property="og:site_name" content="Asclit"/>
+<meta property="og:url" content="https://br1im.github.io/asclit-landing/"/>
+<meta property="og:title" content="Asclit — вся медицина в одном курсе"/>
+<meta property="og:description" content="Полный курс медицины: все предметы, интерактивные 3D-модели органов и ИИ-наставник. Понимай, а не зубри."/>
+<meta property="og:image" content="https://br1im.github.io/asclit-landing/og.png"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta property="og:image:alt" content="Asclit — вся медицина в одном курсе"/>
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Asclit — вся медицина в одном курсе"/>
+<meta name="twitter:description" content="Полный курс медицины: все предметы, интерактивные 3D-модели органов и ИИ-наставник. Понимай, а не зубри."/>
+<meta name="twitter:image" content="https://br1im.github.io/asclit-landing/og.png"/>
 <link rel="icon" href="favicon.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +32,21 @@
   --bg:#f4f3f0;--bg2:#ecebe6;--ink:#0a0a0a;--ink2:#555;--ink3:#999;--line:#dad8d2;--line2:#e6e4de;--red:#e8351e;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+
+/* loader */
+#loader{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .6s ease}
+#loader.gone{opacity:0;pointer-events:none}
+.ld-in{width:min(440px,76vw);display:flex;flex-direction:column;align-items:center}
+.ld-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-.03em;display:flex;align-items:center;gap:9px;margin-bottom:24px}
+.ld-brand .sq{width:13px;height:13px;background:var(--red)}
+.ld-ecg{width:100%;height:62px;margin-bottom:22px}
+.ld-ecg path{fill:none;stroke:var(--red);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:420;stroke-dashoffset:420;animation:ecg 1.5s linear infinite}
+@keyframes ecg{to{stroke-dashoffset:-420}}
+.ld-meta{width:100%;display:flex;justify-content:space-between;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:9px}
+.ld-meta #ldpct{color:var(--ink);font-variant-numeric:tabular-nums}
+.ld-bar{width:100%;height:3px;background:var(--line)}
+.ld-fill{height:100%;background:var(--red);transform-origin:left;transform:scaleX(0)}
+@media(prefers-reduced-motion:reduce){.ld-ecg path{animation:none;stroke-dashoffset:0}}
 html{scroll-behavior:smooth}
 body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
 .mono{font-family:'IBM Plex Mono',monospace}
@@ -259,6 +292,14 @@ footer{padding:40px 0 50px}
 </style>
 </head>
 <body>
+<div id="loader">
+  <div class="ld-in">
+    <div class="ld-brand"><span class="sq"></span>ASCLIT</div>
+    <svg class="ld-ecg" viewBox="0 0 300 64" preserveAspectRatio="none"><path d="M0 32 H58 l6 0 l5 -17 l6 31 l6 -23 l5 9 H140 l6 0 l5 -17 l6 31 l6 -23 l5 9 H300"/></svg>
+    <div class="ld-meta"><span>// Загрузка 3D-модели</span><span id="ldpct">00%</span></div>
+    <div class="ld-bar"><div class="ld-fill" id="ldfill"></div></div>
+  </div>
+</div>
 <div id="prog"></div>
 
 <nav class="nav"><div class="nav-in">
@@ -403,6 +444,15 @@ rnd.setClearColor(0x000000,0);rnd.setPixelRatio(Math.min(devicePixelRatio,2));
 const scene=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(40,1,0.1,100);cam.position.set(0,0,6);
 const grp=new THREE.Group();grp.rotation.set(0,Math.PI/2,0);scene.add(grp);
+/* loader control */
+const ld=document.getElementById('loader'),ldfill=document.getElementById('ldfill'),ldpct=document.getElementById('ldpct');
+let lp=0,ltarget=0,lDone=false;
+const lset=p=>{ltarget=Math.max(ltarget,Math.min(1,p));};
+(function lanim(){lp+=(ltarget-lp)*0.12;if(!lDone&&lp>0.9)lp=0.9;const v=Math.round(lp*100);if(ldpct)ldpct.textContent=String(v).padStart(2,'0')+'%';if(ldfill)ldfill.style.transform='scaleX('+lp.toFixed(4)+')';if(lp<0.999||!lDone)requestAnimationFrame(lanim);})();
+const creep=setInterval(()=>{if(!lDone)lset(Math.min(0.85,ltarget+0.035));},170);
+function hideLoader(){if(lDone)return;lDone=true;clearInterval(creep);lset(1);setTimeout(()=>{if(ld){ld.classList.add('gone');setTimeout(()=>ld&&ld.remove(),700);}},480);}
+setTimeout(hideLoader,12000); // safety fallback
+
 new GLTFLoader().load('heart_new.glb',(g)=>{
  const root=g.scene;root.updateMatrixWorld(true);
  const box=new THREE.Box3().setFromObject(root);
@@ -417,8 +467,9 @@ new GLTFLoader().load('heart_new.glb',(g)=>{
  grp.scale.setScalar(sc);grp.position.set(-ctr.x*sc,-ctr.y*sc,-ctr.z*sc);
  grp.userData.bx=grp.position.x;
  grp.scale.set(0,0,0);const t0=performance.now();
+ requestAnimationFrame(()=>requestAnimationFrame(hideLoader)); // fade loader once first frame is ready
  (function intro(){const k=Math.min(1,(performance.now()-t0)/900);const e=1-Math.pow(1-k,3);grp.scale.setScalar(sc*e);if(k<1)requestAnimationFrame(intro);})();
-});
+},(e)=>{if(e&&e.total)lset(Math.min(0.92,e.loaded/e.total*0.92));},()=>hideLoader());
 function rs(){const w=cv.clientWidth||1,h=cv.clientHeight||1;rnd.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();}
 new ResizeObserver(rs).observe(cv);rs();
 /* pointer / tilt / scroll reactivity */
