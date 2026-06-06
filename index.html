@@ -252,8 +252,9 @@ footer{padding:40px 0 50px}
   .subs{grid-template-columns:1fr}
   .cta{flex-direction:column}
   .cta a{width:100%}
-  .stats{grid-template-columns:1fr 1fr}
-  .stats .st:nth-child(3){grid-column:1/3;border-top:1px solid var(--line)}
+  .stats{grid-template-columns:1fr}
+  .stats .st{border-right:none;border-bottom:1px solid var(--line);padding:18px clamp(16px,3.5vw,28px)}
+  .stats .st:last-child{border-bottom:none}
 }
 </style>
 </head>
@@ -420,16 +421,18 @@ new GLTFLoader().load('heart_new.glb',(g)=>{
 });
 function rs(){const w=cv.clientWidth||1,h=cv.clientHeight||1;rnd.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();}
 new ResizeObserver(rs).observe(cv);rs();
-/* pointer / tilt reactivity */
-let px=0,py=0,tx=0,ty=0;
+/* pointer / tilt / scroll reactivity */
+let px=0,py=0,tx=0,ty=0,sy=0,ss=0;
 addEventListener('pointermove',e=>{tx=(e.clientX/innerWidth-0.5)*2;ty=(e.clientY/innerHeight-0.5)*2;});
 addEventListener('deviceorientation',e=>{if(e.gamma!=null){tx=Math.max(-1,Math.min(1,e.gamma/30));ty=Math.max(-1,Math.min(1,(e.beta-40)/30));}});
+addEventListener('scroll',()=>{sy=window.scrollY||0;},{passive:true});
 const ck=new THREE.Clock();const coordEl=document.getElementById('coord');let fr=0;
 function loop(){requestAnimationFrame(loop);const t=ck.elapsedTime;
-  px+=(tx-px)*0.06;py+=(ty-py)*0.06;
-  const ry=Math.PI/2+Math.sin(t*0.2)*0.16+px*0.5;
+  px+=(tx-px)*0.06;py+=(ty-py)*0.06;ss+=(sy-ss)*0.08;
+  const so=ss*0.0016;                 // heart turns as the page scrolls (works on touch)
+  const ry=Math.PI/2+Math.sin(t*0.2)*0.16+px*0.5+so;
   grp.rotation.y=ry;
-  grp.rotation.x=Math.sin(t*0.16)*0.05+py*0.32;
+  grp.rotation.x=Math.sin(t*0.16)*0.05+py*0.32+Math.sin(so*0.6)*0.12;
   grp.position.x=(grp.userData.bx||0)+px*0.18;
   if(coordEl&&(fr++%5===0)){const dy=ry*180/Math.PI;const dx=grp.rotation.x*180/Math.PI;coordEl.textContent='X:'+dx.toFixed(1)+'° Y:'+dy.toFixed(0)+'° · 3D';}
   rnd.render(scene,cam);}
