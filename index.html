@@ -49,6 +49,11 @@ a{color:inherit;text-decoration:none}svg{display:block}
 h1{font-weight:500;font-size:clamp(48px,8vw,124px);line-height:.92;letter-spacing:-.05em;margin:30px 0}
 h1 .o{-webkit-text-stroke:1.5px var(--ink);color:transparent}
 h1 .r{color:var(--red)}
+.hl .ln{display:block;overflow:hidden}
+.hl .ln>span{display:inline-block;transform:translateY(108%);transition:transform .9s cubic-bezier(.16,1,.3,1)}
+.hl.go .ln>span{transform:none}
+.hl .ln:nth-child(2)>span{transition-delay:.09s}
+.hl .ln:nth-child(3)>span{transition-delay:.18s}
 .btmrow{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .lead{font-size:17px;color:var(--ink);max-width:34ch;line-height:1.45}
 .lead b{color:var(--red)}
@@ -69,6 +74,9 @@ h1 .r{color:var(--red)}
 .st:last-child{border-right:none}
 .st .n{font-weight:700;font-size:40px;letter-spacing:-.04em}
 .st .n .red{color:var(--red)}
+.stats.in .st{opacity:0;transform:translateY(14px);animation:fadeUp .6s cubic-bezier(.16,1,.3,1) forwards}
+.stats .st:nth-child(2){animation-delay:.08s}
+.stats .st:nth-child(3){animation-delay:.16s}
 .st .l{font-family:'IBM Plex Mono';font-size:11px;text-transform:uppercase;color:var(--ink2);margin-top:4px}
 
 /* section base */
@@ -142,9 +150,31 @@ footer{padding:40px 0 50px}
 .foot .links a{font-family:'IBM Plex Mono';font-size:12px;color:var(--ink2)}
 .foot .links a:hover{color:var(--red)}
 
+/* hero intro fades */
+.fadeUp{opacity:0;transform:translateY(16px);animation:fadeUp .8s cubic-bezier(.16,1,.3,1) forwards}
+.tagrow{animation:fadeUp .7s cubic-bezier(.16,1,.3,1) both}
+.btmrow{opacity:0;transform:translateY(16px);animation:fadeUp .8s cubic-bezier(.16,1,.3,1) .42s forwards}
+.cR .cap,.cR .lbl,.cR .coord{opacity:0;animation:fadeIn .8s ease .7s forwards}
+@keyframes fadeUp{to{opacity:1;transform:none}}
+@keyframes fadeIn{to{opacity:1}}
+
 /* reveal */
 .reveal{opacity:0;transform:translateY(20px);transition:.7s cubic-bezier(.22,1,.36,1)}
 .reveal.in{opacity:1;transform:none}
+/* staggered children */
+.feat.in .fc,.subs.in .sub-c,.how.in .step{opacity:0;transform:translateY(18px);animation:fadeUp .6s cubic-bezier(.16,1,.3,1) forwards}
+.feat .fc:nth-child(2),.subs .sub-c:nth-child(2),.how .step:nth-child(2){animation-delay:.07s}
+.feat .fc:nth-child(3),.subs .sub-c:nth-child(3),.how .step:nth-child(3){animation-delay:.14s}
+.subs .sub-c:nth-child(4){animation-delay:.21s}
+.subs .sub-c:nth-child(5){animation-delay:.28s}
+.subs .sub-c:nth-child(6){animation-delay:.35s}
+.subs .sub-c:nth-child(7){animation-delay:.42s}
+.subs .sub-c:nth-child(8){animation-delay:.49s}
+.msg{opacity:0;transform:translateY(12px)}
+.chat.in .msg{animation:fadeUp .55s cubic-bezier(.16,1,.3,1) forwards}
+.chat.in .msg:nth-child(2){animation-delay:.4s}
+.chat.in .msg:nth-child(3){animation-delay:.85s}
+.chat.in .msg:nth-child(4){animation-delay:1.25s}
 
 @media(max-width:900px){
   .nlinks{display:none}
@@ -185,7 +215,11 @@ footer{padding:40px 0 50px}
 <header class="hero" id="top"><div class="wrap hero-in">
   <div class="cL">
     <div class="tagrow"><span class="red"><span class="blink">●</span> Полный курс медицины</span><span>3D + ИИ / 2026</span></div>
-    <h1>Вся<br>медицина<br><span class="o">в одном</span> <span class="r">курсе</span></h1>
+    <h1 class="hl">
+      <span class="ln"><span>Вся</span></span>
+      <span class="ln"><span>медицина</span></span>
+      <span class="ln"><span class="o">в&nbsp;одном</span> <span class="r">курсе</span></span>
+    </h1>
     <div class="btmrow">
       <p class="lead">Все предметы, интерактивные 3D-модели органов и ИИ-наставник в одном месте. <b>Понимай, а не зубри.</b></p>
       <div class="cta">
@@ -203,10 +237,10 @@ footer{padding:40px 0 50px}
   </div>
 </div></header>
 
-<div class="wrap"><div class="stats">
-  <div class="st"><div class="n">0<span class="red">8</span></div><div class="l">ключевых предметов</div></div>
+<div class="wrap"><div class="stats reveal" id="stats">
+  <div class="st"><div class="n">0<span class="red cu" data-to="8">0</span></div><div class="l">ключевых предметов</div></div>
   <div class="st"><div class="n">3<span class="red">D</span></div><div class="l">модели органов</div></div>
-  <div class="st"><div class="n">24/<span class="red">7</span></div><div class="l">ИИ-наставник</div></div>
+  <div class="st"><div class="n"><span class="cu" data-to="24">0</span>/<span class="red">7</span></div><div class="l">ИИ-наставник</div></div>
 </div></div>
 
 <!-- ABOUT / FEATURES -->
@@ -264,7 +298,7 @@ footer{padding:40px 0 50px}
         <li>Подсказывает связи между предметами</li>
       </ul>
     </div>
-    <div class="chat">
+    <div class="chat reveal">
       <div class="msg q"><div class="who">Студент</div>Объясни разницу между систолой и диастолой простыми словами</div>
       <div class="msg a"><div class="who">Asclit AI</div><b>Систола</b> — сердце сокращается и выталкивает кровь. <b>Диастола</b> — расслабляется и наполняется. Один цикл «сжатие → расслабление» = один удар сердца.</div>
       <div class="msg q"><div class="who">Студент</div>А что слушает врач фонендоскопом?</div>
@@ -313,13 +347,24 @@ new GLTFLoader().load('heart_new.glb',(g)=>{
    wire.applyMatrix4(o.matrixWorld);grp.add(wire);
  }});
  grp.scale.setScalar(sc);grp.position.set(-ctr.x*sc,-ctr.y*sc,-ctr.z*sc);
+ grp.userData.bx=grp.position.x;
+ grp.scale.set(0,0,0);const t0=performance.now();
+ (function intro(){const k=Math.min(1,(performance.now()-t0)/900);const e=1-Math.pow(1-k,3);grp.scale.setScalar(sc*e);if(k<1)requestAnimationFrame(intro);})();
 });
 function rs(){const w=cv.clientWidth||1,h=cv.clientHeight||1;rnd.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();}
 new ResizeObserver(rs).observe(cv);rs();
+/* pointer / tilt reactivity */
+let px=0,py=0,tx=0,ty=0;
+addEventListener('pointermove',e=>{tx=(e.clientX/innerWidth-0.5)*2;ty=(e.clientY/innerHeight-0.5)*2;});
+addEventListener('deviceorientation',e=>{if(e.gamma!=null){tx=Math.max(-1,Math.min(1,e.gamma/30));ty=Math.max(-1,Math.min(1,(e.beta-40)/30));}});
 const ck=new THREE.Clock();const coordEl=document.getElementById('coord');let fr=0;
 function loop(){requestAnimationFrame(loop);const t=ck.elapsedTime;
-  const ry=Math.PI/2+Math.sin(t*0.2)*0.22;grp.rotation.y=ry;
-  if(coordEl&&(fr++%6===0)){const deg=(Math.sin(t*0.2)*0.22*180/Math.PI);coordEl.textContent='Y:'+deg.toFixed(1)+'° · Z:6.00 · 3D';}
+  px+=(tx-px)*0.06;py+=(ty-py)*0.06;
+  const ry=Math.PI/2+Math.sin(t*0.2)*0.16+px*0.5;
+  grp.rotation.y=ry;
+  grp.rotation.x=Math.sin(t*0.16)*0.05+py*0.32;
+  grp.position.x=(grp.userData.bx||0)+px*0.18;
+  if(coordEl&&(fr++%5===0)){const dy=ry*180/Math.PI;const dx=grp.rotation.x*180/Math.PI;coordEl.textContent='X:'+dx.toFixed(1)+'° Y:'+dy.toFixed(0)+'° · 3D';}
   rnd.render(scene,cam);}
 loop();
 
@@ -328,8 +373,11 @@ const burger=document.getElementById('burger'),nl=document.getElementById('nlink
 burger.addEventListener('click',()=>nl.classList.toggle('open'));
 nl.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nl.classList.remove('open')));
 addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';});
-const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:0.08});
+function countUp(el){const to=+el.dataset.to;const t0=performance.now();(function s(){const k=Math.min(1,(performance.now()-t0)/1100);const e=1-Math.pow(1-k,3);el.textContent=Math.round(to*e);if(k<1)requestAnimationFrame(s);})();}
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');if(e.target.id==='stats')e.target.querySelectorAll('.cu').forEach(countUp);io.unobserve(e.target);}}),{threshold:0.08});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+// headline reveal on load
+addEventListener('load',()=>{requestAnimationFrame(()=>document.querySelector('.hl').classList.add('go'));});
 </script>
 </body>
 </html>
