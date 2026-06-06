@@ -39,14 +39,12 @@
 .ld-in{width:min(440px,76vw);display:flex;flex-direction:column;align-items:center}
 .ld-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-.03em;display:flex;align-items:center;gap:9px;margin-bottom:30px}
 .ld-brand .sq{width:13px;height:13px;background:var(--red)}
-.ld-pulse{width:74px;height:74px;margin-bottom:30px;transform-origin:center;animation:beat 1.15s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(232,53,30,.22))}
-.ld-pulse path{fill:var(--red)}
-@keyframes beat{0%{transform:scale(1)}12%{transform:scale(1.16)}24%{transform:scale(.99)}36%{transform:scale(1.1)}50%{transform:scale(1)}100%{transform:scale(1)}}
-.ld-meta{width:100%;display:flex;justify-content:space-between;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:9px}
+.ld-meta{width:100%;display:flex;justify-content:space-between;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
 .ld-meta #ldpct{color:var(--ink);font-variant-numeric:tabular-nums}
-.ld-bar{width:100%;height:3px;background:var(--line)}
-.ld-fill{height:100%;background:var(--red);transform-origin:left;transform:scaleX(0)}
-@media(prefers-reduced-motion:reduce){.ld-pulse{animation:none}}
+.ld-ecg{width:100%;height:50px;display:block}
+.ld-ecg .base{fill:none;stroke:var(--line);stroke-width:2}
+.ld-ecg .prog{fill:none;stroke:var(--red);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1}
+.ld-ecg .tip{fill:var(--red)}
 html{scroll-behavior:smooth}
 body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
 .mono{font-family:'IBM Plex Mono',monospace}
@@ -295,9 +293,11 @@ footer{padding:40px 0 50px}
 <div id="loader">
   <div class="ld-in">
     <div class="ld-brand"><span class="sq"></span>ASCLIT</div>
-    <svg class="ld-pulse" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 86 C16 60 8 38 22 24 C34 12 48 20 50 32 C52 20 66 12 78 24 C92 38 84 60 50 86 Z"/></svg>
     <div class="ld-meta"><span>// Загрузка 3D-модели</span><span id="ldpct">00%</span></div>
-    <div class="ld-bar"><div class="ld-fill" id="ldfill"></div></div>
+    <svg class="ld-ecg" viewBox="0 0 440 50" preserveAspectRatio="none" aria-hidden="true">
+      <path class="base" pathLength="1" d="M0 25 H70 l7 0 l6 -16 l7 30 l7 -22 l5 8 H175 l7 0 l6 -16 l7 30 l7 -22 l5 8 H285 l7 0 l6 -16 l7 30 l7 -22 l5 8 H440"/>
+      <path class="prog" id="ldprog" pathLength="1" d="M0 25 H70 l7 0 l6 -16 l7 30 l7 -22 l5 8 H175 l7 0 l6 -16 l7 30 l7 -22 l5 8 H285 l7 0 l6 -16 l7 30 l7 -22 l5 8 H440"/>
+    </svg>
   </div>
 </div>
 <div id="prog"></div>
@@ -445,13 +445,13 @@ const scene=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(40,1,0.1,100);cam.position.set(0,0,6);
 const grp=new THREE.Group();grp.rotation.set(0,Math.PI/2,0);scene.add(grp);
 /* loader control — smooth, time-based, graceful finish (no stall, no jump) */
-const ld=document.getElementById('loader'),ldfill=document.getElementById('ldfill'),ldpct=document.getElementById('ldpct');
+const ld=document.getElementById('loader'),ldprog=document.getElementById('ldprog'),ldpct=document.getElementById('ldpct');
 const lt0=performance.now();
 const MIN_MS=1600;             // guarantee a smooth, unhurried fill even if the model is cached
 let loaded=false,ready=false,finished=false,fStart=0,fFrom=0,lastP=0;
 const easeOut=x=>1-Math.pow(1-x,3);
 const easeIO=x=>x<0.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
-function paint(p){lastP=p;const v=Math.round(p*100);if(ldpct)ldpct.textContent=String(v).padStart(2,'0')+'%';if(ldfill)ldfill.style.transform='scaleX('+p.toFixed(4)+')';}
+function paint(p){lastP=p;const v=Math.round(p*100);if(ldpct)ldpct.textContent=String(v).padStart(2,'0')+'%';if(ldprog)ldprog.style.strokeDashoffset=(1-p).toFixed(4);}
 function lanim(now){
   const el=now-lt0;
   if(!ready&&loaded&&el>=MIN_MS)ready=true;   // latch: only finish once loaded AND min time passed
