@@ -317,9 +317,11 @@ footer{position:relative;z-index:5;border-top:1px solid var(--line);padding:44px
 </script>
 <script type="module">
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-/* ═══ Mathematical heart point cloud ═══ */
+/* ═══ Point-cloud from anatomical heart GLB ═══ */
 const N = 24000;
 const canvas = document.getElementById('hero-canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -360,7 +362,6 @@ function dotTex() {
   return t;
 }
 
-/* ── Generate heart surface points (parametric) ── */
 const group = new THREE.Group();
 scene.add(group);
 const pos  = new Float32Array(N * 3);
@@ -369,125 +370,153 @@ const home = new Float32Array(N * 3);
 const vel  = new Float32Array(N * 3);
 const sizes = new Float32Array(N);
 
-/* Heart parametric surface:
-   u ∈ [0, 2π], v ∈ [0, π]
-   x = sin(v) * [16 sin³(u)]
-   y = 13cos(u) - 5cos(2u) - 2cos(3u) - cos(4u)
-   z = cos(v) * [16 sin³(u)]
-   Scaled to fit ~2.5 units */
+/* Colors */
+const COL_MUSCLE = new THREE.Color(0xcc2218);
+const COL_ART    = new THREE.Color(0xff5a3a);
+const COL_VEIN   = new THREE.Color(0x3b6aff);
 
-const heartScale = 0.09;
-for (let i = 0; i < N; i++) {
-  const u = Math.random() * Math.PI * 2;
-  const v = Math.random() * Math.PI;
-  
-  const sinu = Math.sin(u);
-  const sinu3 = sinu * sinu * sinu;
-  const r16 = 16 * sinu3;
-  
-  let x = Math.sin(v) * r16;
-  let y = 13 * Math.cos(u) - 5 * Math.cos(2*u) - 2 * Math.cos(3*u) - Math.cos(4*u);
-  let z = Math.cos(v) * r16;
-  
-  /* Add slight surface noise for organic feel */
-  const noise = 0.92 + Math.random() * 0.16;
-  x *= noise;
-  y *= noise;
-  z *= noise;
-  
-  home[i*3]   = x * heartScale;
-  home[i*3+1] = y * heartScale;
-  home[i*3+2] = z * heartScale;
-  
-  /* Color: gradient from deep red (bottom) to rose (top), 
-     with blue-ish tint at veins (random spots) */
-  const ny = (y + 17) / 34; /* normalize y to 0..1 */
-  const rnd = Math.random();
-  let cr, cg, cb;
-  
-  if (rnd < 0.06) {
-    /* Rare blue-ish vein points */
-    cr = 0.25 + Math.random() * 0.15;
-    cg = 0.45 + Math.random() * 0.15;
-    cb = 0.85 + Math.random() * 0.15;
-  } else if (rnd < 0.35) {
-    /* Arteries — brighter red-orange */
-    const v2 = 0.8 + Math.random() * 0.4;
-    cr = Math.min(1.0 * v2, 1);
-    cg = Math.min(0.38 * v2, 1);
-    cb = Math.min(0.28 * v2, 1);
-  } else {
-    /* Main muscle — deep red with variation */
-    const v2 = 0.7 + Math.random() * 0.5;
-    cr = Math.min(0.88 * v2, 1);
-    cg = Math.min(0.15 * v2, 1);
-    cb = Math.min(0.12 * v2, 1);
+let geo;
+
+new GLTFLoader().load('heart_new.glb', (gltf) => {
+  const root = gltf.scene;
+  root.updateMatrixWorld(true);
+
+  /* Collect all meshes */
+  const meshes = [];
+  root.traverse(o => { if (o.isMesh && o.geometry?.attributes?.position) meshes.push(o); });
+  if (!meshes.length) { console.error('No meshes in model'); return; }
+
+  /* Sample points from surface */
+  const tmp = new THREE.Vector3();
+  const totalArea = [];
+  let totalA = 0;
+
+  meshes.forEach(m => {
+    const g = m.geometry;
+    const posAttr = g.attributes.position;
+    const idx = g.index;
+    let area = 0;
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+    const triCount = idx ? idx.count / 3 : posAttr.count / 3;
+    for (let i = 0; i < triCount; i++) {
+      const i0 = idx ? idx.getX(i*3) : i*3;
+      const i1 = idx ? idx.getX(i*3+1) : i*3+1;
+      const i2 = idx ? idx.getX(i*3+2) : i*3+2;
+      a.fromBufferAttribute(posAttr, i0);
+      b.fromBufferAttribute(posAttr, i1);
+      c.fromBufferAttribute(posAttr, i2);
+      area += new THREE.Triangle(a,b,c).getArea();
+    }
+    totalArea.push(area);
+    totalA += area;
+  });
+
+  let idx2 = 0;
+  meshes.forEach((m, mi) => {
+    const cnt = Math.round((totalArea[mi] / totalA) * N);
+    const sampler = new MeshSurfaceSampler(m).build();
+    for (let k = 0; k < cnt && idx2 < N; k++, idx2++) {
+      sampler.sample(tmp);
+      tmp.applyMatrix4(m.matrixWorld);
+      home[idx2*3]   = tmp.x;
+      home[idx2*3+1] = tmp.y;
+      home[idx2*3+2] = tmp.z;
+
+      /* Color variation */
+      const rnd = Math.random();
+      let cr, cg, cb;
+      if (rnd < 0.07) {
+        const v = 0.7 + Math.random() * 0.5;
+        cr = COL_VEIN.r * v; cg = COL_VEIN.g * v; cb = COL_VEIN.b * v;
+      } else if (rnd < 0.35) {
+        const v = 0.75 + Math.random() * 0.45;
+        cr = COL_ART.r * v; cg = COL_ART.g * v; cb = COL_ART.b * v;
+      } else {
+        const v = 0.65 + Math.random() * 0.55;
+        cr = COL_MUSCLE.r * v; cg = COL_MUSCLE.g * v; cb = COL_MUSCLE.b * v;
+      }
+      col[idx2*3]   = Math.min(cr, 1);
+      col[idx2*3+1] = Math.min(cg, 1);
+      col[idx2*3+2] = Math.min(cb, 1);
+
+      sizes[idx2] = 0.016 + Math.random() * 0.02;
+    }
+  });
+
+  /* Fill remaining if needed */
+  while (idx2 < N) {
+    const src = Math.floor(Math.random() * idx2);
+    home[idx2*3]   = home[src*3]   + (Math.random() - 0.5) * 0.01;
+    home[idx2*3+1] = home[src*3+1] + (Math.random() - 0.5) * 0.01;
+    home[idx2*3+2] = home[src*3+2] + (Math.random() - 0.5) * 0.01;
+    col[idx2*3] = col[src*3]; col[idx2*3+1] = col[src*3+1]; col[idx2*3+2] = col[src*3+2];
+    sizes[idx2] = sizes[src];
+    idx2++;
   }
-  
-  col[i*3]   = cr;
-  col[i*3+1] = cg;
-  col[i*3+2] = cb;
-  
-  /* Random initial size variation */
-  sizes[i] = 0.018 + Math.random() * 0.018;
-}
 
-/* Center the heart */
-let cx = 0, cy = 0, cz = 0;
-for (let i = 0; i < N; i++) { cx += home[i*3]; cy += home[i*3+1]; cz += home[i*3+2]; }
-cx /= N; cy /= N; cz /= N;
-for (let i = 0; i < N; i++) { home[i*3] -= cx; home[i*3+1] -= cy; home[i*3+2] -= cz; }
+  /* Normalize: center + scale to ~2.8 units */
+  const box = new THREE.Box3();
+  const v = new THREE.Vector3();
+  for (let i = 0; i < N; i++) { v.set(home[i*3], home[i*3+1], home[i*3+2]); box.expandByPoint(v); }
+  const center = box.getCenter(new THREE.Vector3());
+  const sz = box.getSize(new THREE.Vector3());
+  const s = 2.8 / Math.max(sz.x, sz.y, sz.z);
+  for (let i = 0; i < N; i++) {
+    home[i*3]   = (home[i*3]   - center.x) * s;
+    home[i*3+1] = (home[i*3+1] - center.y) * s;
+    home[i*3+2] = (home[i*3+2] - center.z) * s;
+  }
 
-/* Start scattered → converge */
-for (let i = 0; i < N; i++) {
-  const r = 4 + Math.random() * 5;
-  const th = Math.random() * 6.2832;
-  const ph = Math.acos(2 * Math.random() - 1);
-  pos[i*3]   = r * Math.sin(ph) * Math.cos(th);
-  pos[i*3+1] = r * Math.cos(ph);
-  pos[i*3+2] = r * Math.sin(ph) * Math.sin(th);
-}
+  /* Start scattered → converge */
+  for (let i = 0; i < N; i++) {
+    const r = 4 + Math.random() * 5;
+    const th = Math.random() * 6.2832;
+    const ph = Math.acos(2 * Math.random() - 1);
+    pos[i*3]   = r * Math.sin(ph) * Math.cos(th);
+    pos[i*3+1] = r * Math.cos(ph);
+    pos[i*3+2] = r * Math.sin(ph) * Math.sin(th);
+  }
 
-const geo = new THREE.BufferGeometry();
-geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-/* Custom shader for per-point sizes */
-const mat = new THREE.ShaderMaterial({
-  uniforms: {
-    uTex: { value: dotTex() },
-    uPixelRatio: { value: renderer.getPixelRatio() },
-  },
-  vertexShader: `
-    attribute float size;
-    varying vec3 vColor;
-    uniform float uPixelRatio;
-    void main() {
-      vColor = color;
-      vec4 mv = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = size * 280.0 * uPixelRatio / -mv.z;
-      gl_Position = projectionMatrix * mv;
-    }
-  `,
-  fragmentShader: `
-    uniform sampler2D uTex;
-    varying vec3 vColor;
-    void main() {
-      vec4 t = texture2D(uTex, gl_PointCoord);
-      if (t.a < 0.01) discard;
-      gl_FragColor = vec4(vColor * t.rgb * 1.6, t.a * 0.88);
-    }
-  `,
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
-  vertexColors: true,
-});
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTex: { value: dotTex() },
+      uPixelRatio: { value: renderer.getPixelRatio() },
+    },
+    vertexShader: `
+      attribute float size;
+      varying vec3 vColor;
+      uniform float uPixelRatio;
+      void main() {
+        vColor = color;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = size * 300.0 * uPixelRatio / -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uTex;
+      varying vec3 vColor;
+      void main() {
+        vec4 t = texture2D(uTex, gl_PointCoord);
+        if (t.a < 0.01) discard;
+        gl_FragColor = vec4(vColor * t.rgb * 1.5, t.a * 0.9);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true,
+  });
 
-group.add(new THREE.Points(geo, mat));
+  group.add(new THREE.Points(geo, mat));
+}, undefined, e => console.error('Model error:', e));
 
-/* ── Mouse interaction: proper 3D ray-based repulsion ── */
+/* ── Mouse: 3D ray-based repulsion ── */
 const mouseNDC = new THREE.Vector2(-10, -10);
 const raycaster = new THREE.Raycaster();
 const rayOrigin = new THREE.Vector3();
@@ -509,15 +538,14 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  mat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
 }
 new ResizeObserver(resize).observe(canvas);
 resize();
 
 /* ── Animation ── */
 const clock = new THREE.Clock();
-const REPULSE_RADIUS = 0.7;
-const REPULSE_STRENGTH = 14;
+const REPULSE_RADIUS = 0.65;
+const REPULSE_STRENGTH = 12;
 
 function loop() {
   requestAnimationFrame(loop);
@@ -525,61 +553,65 @@ function loop() {
   const t = clock.elapsedTime;
   controls.update();
 
-  const p = geo.attributes.position.array;
+  if (geo) {
+    const p = geo.attributes.position.array;
 
-  /* Set up ray in world space, then convert to group local */
-  raycaster.setFromCamera(mouseNDC, camera);
-  const invMat = group.matrixWorld.clone().invert();
-  rayOrigin.copy(raycaster.ray.origin).applyMatrix4(invMat);
-  rayDir.copy(raycaster.ray.direction).transformDirection(invMat).normalize();
+    /* Ray in group-local space */
+    raycaster.setFromCamera(mouseNDC, camera);
+    const invMat = group.matrixWorld.clone().invert();
+    rayOrigin.copy(raycaster.ray.origin).applyMatrix4(invMat);
+    rayDir.copy(raycaster.ray.direction).transformDirection(invMat).normalize();
 
-  /* Heartbeat */
-  const ph = (t % 0.9) / 0.9;
-  let beat = 0;
-  if (ph < 0.12) beat = Math.sin(ph / 0.12 * Math.PI) * 0.025;
-  else if (ph > 0.2 && ph < 0.32) beat = Math.sin((ph - 0.2) / 0.12 * Math.PI) * 0.015;
-  const scale = 1 + beat;
+    /* Heartbeat: double-bump like a real heart */
+    const ph = (t % 0.85) / 0.85;
+    let beat = 0;
+    if (ph < 0.12) beat = Math.sin(ph / 0.12 * Math.PI) * 0.025;
+    else if (ph > 0.2 && ph < 0.32) beat = Math.sin((ph - 0.2) / 0.12 * Math.PI) * 0.016;
+    const scale = 1 + beat;
 
-  for (let i = 0; i < N; i++) {
-    const ix = i * 3, iy = ix + 1, iz = ix + 2;
-    const tx = home[ix] * scale;
-    const ty = home[iy] * scale;
-    const tz = home[iz] * scale;
+    for (let i = 0; i < N; i++) {
+      const ix = i * 3, iy = ix + 1, iz = ix + 2;
+      const tx = home[ix] * scale;
+      const ty = home[iy] * scale;
+      const tz = home[iz] * scale;
 
-    /* Spring to home position */
-    vel[ix] += (tx - p[ix]) * 5.5 * dt;
-    vel[iy] += (ty - p[iy]) * 5.5 * dt;
-    vel[iz] += (tz - p[iz]) * 5.5 * dt;
+      /* Spring to home */
+      vel[ix] += (tx - p[ix]) * 5.5 * dt;
+      vel[iy] += (ty - p[iy]) * 5.5 * dt;
+      vel[iz] += (tz - p[iz]) * 5.5 * dt;
 
-    /* 3D ray-based repulsion: distance from point to ray */
-    tmpV.set(p[ix] - rayOrigin.x, p[iy] - rayOrigin.y, p[iz] - rayOrigin.z);
-    const projLen = tmpV.dot(rayDir);
-    tmpProj.copy(rayDir).multiplyScalar(projLen).add(rayOrigin);
-    
-    const dx = p[ix] - tmpProj.x;
-    const dy = p[iy] - tmpProj.y;
-    const dz = p[iz] - tmpProj.z;
-    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      /* 3D ray repulsion: distance from point to camera ray */
+      tmpV.set(p[ix] - rayOrigin.x, p[iy] - rayOrigin.y, p[iz] - rayOrigin.z);
+      const projLen = tmpV.dot(rayDir);
 
-    if (dist < REPULSE_RADIUS && projLen > 0) {
-      const falloff = 1 - (dist / REPULSE_RADIUS);
-      const strength = falloff * falloff * REPULSE_STRENGTH;
-      const invDist = 1 / (dist + 0.001);
-      vel[ix] += dx * invDist * strength * dt;
-      vel[iy] += dy * invDist * strength * dt;
-      vel[iz] += dz * invDist * strength * dt;
+      if (projLen > 0) {
+        tmpProj.copy(rayDir).multiplyScalar(projLen).add(rayOrigin);
+        const dx = p[ix] - tmpProj.x;
+        const dy = p[iy] - tmpProj.y;
+        const dz = p[iz] - tmpProj.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        if (dist < REPULSE_RADIUS) {
+          const falloff = 1 - (dist / REPULSE_RADIUS);
+          const strength = falloff * falloff * REPULSE_STRENGTH;
+          const invDist = 1 / (dist + 0.001);
+          vel[ix] += dx * invDist * strength * dt;
+          vel[iy] += dy * invDist * strength * dt;
+          vel[iz] += dz * invDist * strength * dt;
+        }
+      }
+
+      /* Damping */
+      vel[ix] *= 0.87;
+      vel[iy] *= 0.87;
+      vel[iz] *= 0.87;
+
+      p[ix] += vel[ix];
+      p[iy] += vel[iy];
+      p[iz] += vel[iz];
     }
-
-    /* Damping */
-    vel[ix] *= 0.88;
-    vel[iy] *= 0.88;
-    vel[iz] *= 0.88;
-
-    p[ix] += vel[ix];
-    p[iy] += vel[iy];
-    p[iz] += vel[iz];
+    geo.attributes.position.needsUpdate = true;
   }
-  geo.attributes.position.needsUpdate = true;
 
   /* Gentle float */
   group.position.y = Math.sin(t * 0.45) * 0.06;
@@ -593,31 +625,23 @@ const dc = document.getElementById('dust');
 const dctx = dc.getContext('2d');
 let DP = [];
 function dsz() {
-  dc.width = innerWidth;
-  dc.height = innerHeight;
+  dc.width = innerWidth; dc.height = innerHeight;
   DP = Array.from({ length: 50 }, () => ({
-    x: Math.random() * dc.width,
-    y: Math.random() * dc.height,
-    r: Math.random() * 1.1 + 0.3,
-    s: Math.random() * 0.22 + 0.03,
+    x: Math.random() * dc.width, y: Math.random() * dc.height,
+    r: Math.random() * 1.1 + 0.3, s: Math.random() * 0.22 + 0.03,
     o: Math.random() * 0.3 + 0.06,
   }));
 }
 function ddraw() {
   dctx.clearRect(0, 0, dc.width, dc.height);
   for (const p of DP) {
-    p.y -= p.s;
-    if (p.y < -5) p.y = dc.height + 5;
-    dctx.beginPath();
-    dctx.arc(p.x, p.y, p.r, 0, 7);
-    dctx.fillStyle = 'rgba(255,140,120,' + p.o + ')';
-    dctx.fill();
+    p.y -= p.s; if (p.y < -5) p.y = dc.height + 5;
+    dctx.beginPath(); dctx.arc(p.x, p.y, p.r, 0, 7);
+    dctx.fillStyle = 'rgba(255,140,120,' + p.o + ')'; dctx.fill();
   }
   requestAnimationFrame(ddraw);
 }
-addEventListener('resize', dsz);
-dsz();
-ddraw();
+addEventListener('resize', dsz); dsz(); ddraw();
 
 /* ── Scroll + reveals ── */
 addEventListener('scroll', () => {
