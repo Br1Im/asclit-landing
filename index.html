@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Asclit — полный курс медицины</title>
+<meta name="description" content="Asclit — полный курс медицины онлайн. Все предметы, интерактивные 3D-модели и ИИ-наставник. Понимай, а не зубри."/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060507;--bg2:#0a0810;--panel:rgba(255,255,255,.025);
+  --ink:#f4eef0;--ink2:#aaa2ad;--ink3:#6b6470;
+  --line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.045);
+  --red:#ff3b30;--red2:#ff6a52;--rose:#ff8a7a;--glow:rgba(255,59,48,.5);
+  --cyan:#5ad1e6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;font-weight:300;line-height:1.6}
+a{color:inherit;text-decoration:none}
+.dsp{font-family:'Space Grotesk',sans-serif}
+.ser{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400}
+.mono{font-family:'Space Grotesk',monospace;letter-spacing:.04em}
+::selection{background:var(--red);color:#fff}
+
+/* ambient bg */
+.amb{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.amb .o{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
+.amb .o1{width:780px;height:780px;background:radial-gradient(circle,rgba(255,59,48,.32),transparent 70%);top:-260px;right:-160px}
+.amb .o2{width:620px;height:620px;background:radial-gradient(circle,rgba(90,209,230,.10),transparent 70%);bottom:-240px;left:-180px}
+.amb .o3{width:520px;height:520px;background:radial-gradient(circle,rgba(255,106,82,.14),transparent 70%);top:46%;left:42%}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+#dust{position:fixed;inset:0;z-index:1;pointer-events:none}
+
+/* progress */
+.prog{position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,var(--red),var(--rose));z-index:60;box-shadow:0 0 12px var(--glow)}
+
+/* nav */
+.nav{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:50;width:calc(100% - 36px);max-width:1280px;
+  display:flex;align-items:center;justify-content:space-between;padding:13px 14px 13px 22px;
+  background:rgba(12,10,14,.55);backdrop-filter:blur(18px) saturate(1.3);border:1px solid var(--line);border-radius:100px;transition:.3s}
+.brand{font-family:'Space Grotesk';font-weight:700;font-size:21px;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--glow);animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.7}}
+.nlinks{display:flex;gap:30px}
+.nlinks a{font-size:13.5px;color:var(--ink2);transition:.15s}
+.nlinks a:hover{color:var(--ink)}
+.nav .cta{font-family:'Space Grotesk';font-weight:500;font-size:13px;padding:11px 20px;border-radius:100px;
+  background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;box-shadow:0 6px 24px -6px var(--glow);transition:.18s}
+.nav .cta:hover{transform:translateY(-1px);box-shadow:0 10px 30px -6px var(--glow)}
+
+.wrap{position:relative;z-index:5;max-width:1280px;margin:0 auto;padding:0 36px}
+
+/* hero */
+.hero{position:relative;z-index:5;min-height:100svh;display:flex;align-items:center}
+#hero-canvas{position:absolute;top:0;right:-4%;width:62%;height:100%;z-index:1;cursor:grab;touch-action:none}
+#hero-canvas:active{cursor:grabbing}
+.hero-in{position:relative;z-index:2;pointer-events:none}
+.hero-in a,.hero-in .hero-cta,.hero-in button{pointer-events:auto}
+.dissect-ui{position:absolute;z-index:4;right:max(36px,4vw);bottom:104px;display:flex;flex-direction:column;gap:13px;align-items:flex-end;pointer-events:none}
+.part-label{background:rgba(12,10,14,.62);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:14px;padding:11px 16px;min-width:210px;text-align:right;transition:.2s}
+.part-label.active{border-color:rgba(255,59,48,.45)}
+.part-label .pl-name{display:block;font-family:'Space Grotesk';font-weight:600;font-size:15px;color:var(--ink);line-height:1.25}
+.part-label .pl-lat{display:block;font-family:'Instrument Serif';font-style:italic;font-size:13px;color:var(--rose);margin-top:3px}
+.dctrl{pointer-events:auto;display:flex;align-items:center;gap:12px;background:rgba(12,10,14,.62);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:100px;padding:9px 18px}
+.dctrl .ic{color:var(--rose);font-size:14px}
+.dctrl .lbl{font-family:'Space Grotesk';font-size:12px;color:var(--ink2);letter-spacing:.02em}
+.dctrl input[type=range]{-webkit-appearance:none;appearance:none;width:120px;height:3px;border-radius:3px;background:var(--line);outline:none}
+.dctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--red2);box-shadow:0 0 10px var(--glow);cursor:pointer}
+.dctrl input[type=range]::-moz-range-thumb{width:15px;height:15px;border:none;border-radius:50%;background:var(--red2);box-shadow:0 0 10px var(--glow);cursor:pointer}
+.hero-hint{position:absolute;z-index:4;right:max(36px,4vw);bottom:64px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+@media(max-width:980px){#hero-canvas{width:100%;right:0;opacity:.92}.dissect-ui{left:22px;right:22px;bottom:120px;align-items:center}.part-label{text-align:center;min-width:0}.hero-hint{display:none}}
+.hero-in{max-width:1280px;margin:0 auto;padding:0 36px;width:100%}
+.tagline{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--line);border-radius:100px;
+  background:var(--panel);font-size:12.5px;color:var(--ink2);letter-spacing:.02em;margin-bottom:30px}
+.tagline .b{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+h1{font-family:'Space Grotesk';font-weight:600;font-size:clamp(54px,8.4vw,128px);line-height:.93;letter-spacing:-.04em;margin-bottom:30px}
+h1 .ser{font-weight:400;letter-spacing:-.01em;background:linear-gradient(120deg,var(--rose),var(--red2));-webkit-background-clip:text;background-clip:text;color:transparent;font-size:1.04em}
+.sub{font-size:20px;color:var(--ink2);max-width:34ch;margin-bottom:40px;line-height:1.55}
+.sub b{color:var(--ink);font-weight:500}
+.hero-cta{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.btn-p{font-family:'Space Grotesk';font-weight:600;font-size:15px;padding:17px 32px;border-radius:100px;
+  background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;box-shadow:0 10px 36px -8px var(--glow);transition:.2s;cursor:pointer}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 16px 46px -8px var(--glow)}
+.btn-s{font-family:'Space Grotesk';font-weight:500;font-size:15px;color:var(--ink);display:inline-flex;align-items:center;gap:9px;transition:.15s}
+.btn-s .ic{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;transition:.2s}
+.btn-s:hover .ic{background:var(--panel);border-color:var(--red);transform:translateX(3px)}
+.scrollcue{position:absolute;bottom:28px;left:36px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:10px}
+.scrollcue .ln{width:34px;height:1px;background:var(--line);position:relative;overflow:hidden}
+.scrollcue .ln::after{content:'';position:absolute;inset:0;background:var(--red);animation:slide 2s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+/* marquee */
+.marq{position:relative;z-index:5;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:26px 0;overflow:hidden;background:rgba(255,255,255,.012)}
+.marq-track{display:flex;gap:48px;white-space:nowrap;animation:scrollx 32s linear infinite;width:max-content}
+.marq-track span{font-family:'Space Grotesk';font-weight:500;font-size:26px;color:var(--ink3);display:flex;align-items:center;gap:48px;letter-spacing:-.01em}
+.marq-track span::after{content:'✦';color:var(--red);font-size:14px}
+@keyframes scrollx{to{transform:translateX(-50%)}}
+
+/* sections */
+section{position:relative;z-index:5;padding:130px 0}
+.eyebrow{font-family:'Space Grotesk';font-size:13px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--red2);
+  display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.eyebrow::before{content:'';width:26px;height:1px;background:var(--red)}
+h2{font-family:'Space Grotesk';font-weight:600;font-size:clamp(34px,4.6vw,62px);line-height:1.02;letter-spacing:-.03em}
+h2 .ser{font-weight:400;color:var(--rose)}
+
+/* manifesto */
+.manifesto{font-family:'Space Grotesk';font-weight:500;font-size:clamp(28px,3.6vw,50px);line-height:1.22;letter-spacing:-.02em;max-width:20ch}
+.manifesto .dim{color:var(--ink3)}
+.manifesto .ser{color:var(--rose);font-weight:400}
+
+/* features */
+.feat-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap;margin-bottom:56px}
+.feat-head p{color:var(--ink2);max-width:38ch;font-size:17px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{position:relative;padding:30px 26px 34px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008));overflow:hidden;transition:.25s;min-height:300px;display:flex;flex-direction:column}
+.card::before{content:'';position:absolute;top:-40%;left:-30%;width:160%;height:120%;background:radial-gradient(circle,var(--glow),transparent 60%);opacity:0;transition:.35s;pointer-events:none}
+.card:hover{transform:translateY(-5px);border-color:rgba(255,59,48,.4)}
+.card:hover::before{opacity:.18}
+.card .ico{width:46px;height:46px;border-radius:13px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;margin-bottom:auto}
+.card .num{position:absolute;top:26px;right:26px;font-family:'Space Grotesk';font-size:12px;color:var(--ink3)}
+.card h3{font-family:'Space Grotesk';font-weight:600;font-size:20px;margin:24px 0 9px;letter-spacing:-.01em}
+.card p{font-size:14.5px;color:var(--ink2);line-height:1.5}
+.card .tag{display:inline-block;margin-top:12px;font-family:'Space Grotesk';font-size:10px;letter-spacing:.1em;color:var(--rose);border:1px solid rgba(255,59,48,.4);border-radius:100px;padding:3px 9px}
+
+/* program grid */
+.prog-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:54px}
+.disc{position:relative;padding:24px 22px 26px;border:1px solid var(--line);border-radius:18px;background:var(--panel);transition:.22s;overflow:hidden}
+.disc:hover{border-color:rgba(255,59,48,.45);background:linear-gradient(180deg,rgba(255,59,48,.06),rgba(255,255,255,.01));transform:translateY(-4px)}
+.disc .rn{font-family:'Space Grotesk';font-size:12px;color:var(--red2);margin-bottom:36px;letter-spacing:.08em}
+.disc h4{font-family:'Space Grotesk';font-weight:600;font-size:21px;letter-spacing:-.01em}
+.disc .lat{font-family:'Instrument Serif';font-style:italic;font-size:15px;color:var(--ink3);margin-top:3px}
+.disc .mk{position:absolute;top:22px;right:22px;font-family:'Space Grotesk';font-size:9.5px;letter-spacing:.08em;color:var(--ink3);border:1px solid var(--line);border-radius:100px;padding:3px 8px}
+.disc .mk.is3d{color:var(--rose);border-color:rgba(255,59,48,.4)}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:56px;position:relative}
+.step{position:relative;padding:34px 28px;border:1px solid var(--line);border-radius:20px;background:var(--panel)}
+.step .big{font-family:'Space Grotesk';font-weight:700;font-size:54px;line-height:1;letter-spacing:-.03em;
+  background:linear-gradient(135deg,var(--red),var(--rose));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:20px}
+.step h3{font-family:'Space Grotesk';font-weight:600;font-size:21px;margin-bottom:9px}
+.step p{color:var(--ink2);font-size:15px;line-height:1.55}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:10px}
+.stat{padding:38px 26px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);text-align:left}
+.stat .v{font-family:'Space Grotesk';font-weight:700;font-size:clamp(40px,4.4vw,58px);letter-spacing:-.03em;line-height:1}
+.stat .v .ser{font-weight:400;color:var(--rose)}
+.stat .l{color:var(--ink2);font-size:14.5px;margin-top:12px}
+
+/* cta */
+.cta-sec{position:relative;z-index:5;padding:60px 0 130px}
+.cta-box{position:relative;border:1px solid rgba(255,59,48,.3);border-radius:30px;padding:90px 40px;text-align:center;overflow:hidden;
+  background:radial-gradient(80% 130% at 50% 0%,rgba(255,59,48,.16),transparent 60%),rgba(12,10,14,.5)}
+.cta-box h2{margin-bottom:18px}
+.cta-box p{color:var(--ink2);font-size:19px;max-width:46ch;margin:0 auto 38px}
+.form{display:flex;gap:10px;max-width:500px;margin:0 auto;flex-wrap:wrap;justify-content:center}
+.form input{flex:1;min-width:240px;height:58px;padding:0 22px;border-radius:100px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);font-family:'Inter';font-size:15px;outline:none;transition:.18s}
+.form input:focus{border-color:var(--red)}
+.form input::placeholder{color:var(--ink3)}
+.form button{height:58px;padding:0 32px;border-radius:100px;border:none;cursor:pointer;font-family:'Space Grotesk';font-weight:600;font-size:15px;
+  background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;box-shadow:0 10px 36px -8px var(--glow);transition:.2s}
+.form button:hover{transform:translateY(-2px)}
+.cta-note{margin-top:18px;font-size:13px;color:var(--ink3)}
+
+footer{position:relative;z-index:5;border-top:1px solid var(--line);padding:46px 0}
+.foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;color:var(--ink3);font-size:13px}
+.foot .mid{display:flex;gap:26px}
+.foot a:hover{color:var(--ink)}
+
+.reveal{opacity:0;transform:translateY(28px);transition:.9s cubic-bezier(.22,1,.36,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
+
+@media(max-width:980px){
+  .nlinks{display:none}
+  .cards,.prog-grid,.stats{grid-template-columns:repeat(2,1fr)}
+  .steps{grid-template-columns:1fr}
+  h1{font-size:clamp(46px,13vw,84px)}
+}
+@media(max-width:560px){.cards,.prog-grid,.stats{grid-template-columns:1fr}.wrap,.hero-in{padding:0 22px}}
+</style>
+</head>
+<body>
+
+<div class="amb"><div class="o o1"></div><div class="o o2"></div><div class="o o3"></div></div>
+<canvas id="dust"></canvas>
+<div class="grain"></div>
+<div class="prog" id="prog"></div>
+
+<nav class="nav" id="nav">
+  <a class="brand" href="#top">Asclit<span class="dot"></span></a>
+  <div class="nlinks">
+    <a href="#about">Что это</a>
+    <a href="#program">Программа</a>
+    <a href="#how">Как учиться</a>
+  </div>
+  <a class="cta" href="#cta">Ранний доступ</a>
+</nav>
+
+<header class="hero" id="top">
+  <canvas id="hero-canvas"></canvas>
+  <div class="dissect-ui">
+    <div class="part-label" id="partLabel">
+      <span class="pl-name" id="plName">Нажми на часть сердца</span>
+      <span class="pl-lat" id="plLat">кликни, чтобы узнать название</span>
+    </div>
+    <div class="dctrl">
+      <span class="ic">⤢</span>
+      <input type="range" id="explodeRange" min="0" max="100" value="0" aria-label="Разобрать"/>
+      <span class="lbl">Разобрать</span>
+    </div>
+  </div>
+  <div class="hero-hint">крути · приближай · кликай по частям</div>
+  <div class="hero-in">
+    <div class="tagline"><span class="b"></span>Полный курс медицины · 3D + ИИ</div>
+    <h1 class="dsp">Вся медицина —<br><span class="ser">в одном курсе</span></h1>
+    <p class="sub">Все предметы, интерактивные 3D-модели и ИИ-наставник в одном месте. <b>Понимай, а не зубри.</b></p>
+    <div class="hero-cta">
+      <a class="btn-p" href="#cta">Получить ранний доступ</a>
+      <a class="btn-s" href="#about"><span class="ic">↓</span> Как это устроено</a>
+    </div>
+  </div>
+  <div class="scrollcue"><span class="ln"></span>Листай вниз</div>
+</header>
+
+<div class="marq">
+  <div class="marq-track">
+    <span>Анатомия</span><span>Физиология</span><span>Биохимия</span><span>Гистология</span><span>Фармакология</span><span>Патология</span><span>Микробиология</span><span>Клиника</span>
+    <span>Анатомия</span><span>Физиология</span><span>Биохимия</span><span>Гистология</span><span>Фармакология</span><span>Патология</span><span>Микробиология</span><span>Клиника</span>
+  </div>
+</div>
+
+<section id="about">
+  <div class="wrap">
+    <div class="eyebrow reveal">Что это</div>
+    <p class="manifesto reveal">Не атлас и не сборник лекций. <span class="dim">Это</span> <span class="ser">полноценный курс медицины</span> <span class="dim">— все предметы, где сложное становится понятным благодаря 3D и ИИ.</span></p>
+  </div>
+</section>
+
+<section id="feat" style="padding-top:30px">
+  <div class="wrap">
+    <div class="feat-head">
+      <div>
+        <div class="eyebrow reveal">Возможности</div>
+        <h2 class="dsp reveal">Всё, чтобы <span class="ser">понять</span></h2>
+      </div>
+      <p class="reveal d1">Структурированная программа, наглядность и живая помощь — вместо бесконечной зубрёжки.</p>
+    </div>
+    <div class="cards">
+      <div class="card reveal"><div class="ico">📚</div><span class="num">01</span><h3 class="dsp">Все предметы</h3><p>Анатомия, физиология, биохимия, фармакология, патология и клиника — единая выстроенная программа.</p></div>
+      <div class="card reveal d1"><div class="ico">🫀</div><span class="num">02</span><h3 class="dsp">Интерактивное 3D</h3><p>Вращай, разбирай по слоям, делай разрез. Сложную анатомию видно, а не воображаешь.</p><span class="tag">3D-модели</span></div>
+      <div class="card reveal d2"><div class="ico">✦</div><span class="num">03</span><h3 class="dsp">ИИ-наставник</h3><p>Спроси по любой теме «объясни проще» — получи разбор на основе выверенных источников.</p><span class="tag">24/7</span></div>
+      <div class="card reveal d3"><div class="ico">◎</div><span class="num">04</span><h3 class="dsp">Практика и контроль</h3><p>Клинические кейсы, квизы по каждой теме и наглядный трекинг прогресса.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="program">
+  <div class="wrap">
+    <div class="eyebrow reveal">Программа курса</div>
+    <h2 class="dsp reveal">От основ <span class="ser">до клиники</span></h2>
+    <div class="prog-grid">
+      <div class="disc reveal"><div class="rn">I</div><span class="mk is3d">3D</span><h4 class="dsp">Анатомия</h4><div class="lat">structura corporis</div></div>
+      <div class="disc reveal d1"><div class="rn">II</div><span class="mk is3d">3D</span><h4 class="dsp">Физиология</h4><div class="lat">functio</div></div>
+      <div class="disc reveal d2"><div class="rn">III</div><span class="mk">текст</span><h4 class="dsp">Биохимия</h4><div class="lat">processus cellulae</div></div>
+      <div class="disc reveal d3"><div class="rn">IV</div><span class="mk">текст</span><h4 class="dsp">Гистология</h4><div class="lat">textus</div></div>
+      <div class="disc reveal"><div class="rn">V</div><span class="mk">текст</span><h4 class="dsp">Фармакология</h4><div class="lat">materia medica</div></div>
+      <div class="disc reveal d1"><div class="rn">VI</div><span class="mk">текст</span><h4 class="dsp">Патология</h4><div class="lat">morbus</div></div>
+      <div class="disc reveal d2"><div class="rn">VII</div><span class="mk">текст</span><h4 class="dsp">Микробиология</h4><div class="lat">microbia</div></div>
+      <div class="disc reveal d3"><div class="rn">VIII</div><span class="mk">кейсы</span><h4 class="dsp">Клиника</h4><div class="lat">praxis clinica</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <div class="eyebrow reveal">Как учиться</div>
+    <h2 class="dsp reveal">Три шага <span class="ser">к пониманию</span></h2>
+    <div class="steps">
+      <div class="step reveal"><div class="big dsp">01</div><h3 class="dsp">Выбери предмет</h3><p>Открой нужную тему в выстроенной программе — от анатомии до фармакологии.</p></div>
+      <div class="step reveal d1"><div class="big dsp">02</div><h3 class="dsp">Разбери наглядно</h3><p>Читай выверенную теорию, крути 3D-модель и спрашивай ИИ-наставника о непонятном.</p></div>
+      <div class="step reveal d2"><div class="big dsp">03</div><h3 class="dsp">Закрепи знания</h3><p>Пройди квиз, разбери клинический кейс и отследи прогресс по предметам.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="stats" style="padding-top:30px">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat reveal"><div class="v dsp">8</div><div class="l">ключевых предметов в программе</div></div>
+      <div class="stat reveal d1"><div class="v dsp">3D</div><div class="l">интерактивные модели органов</div></div>
+      <div class="stat reveal d2"><div class="v dsp">24<span class="ser">/7</span></div><div class="l">ИИ-наставник под рукой</div></div>
+      <div class="stat reveal d3"><div class="v dsp">1</div><div class="l">курс вместо десятка учебников</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="cta-sec" id="cta">
+  <div class="wrap">
+    <div class="cta-box reveal">
+      <div class="eyebrow" style="justify-content:center">Ранний доступ открыт</div>
+      <h2 class="dsp">Начни понимать медицину <span class="ser">по-настоящему</span></h2>
+      <p>Оставь почту — пришлём ранний доступ и спросим, какие предметы делать первыми.</p>
+      <form class="form" onsubmit="event.preventDefault();this.querySelector('input').value='';document.getElementById('cta-note').textContent='Спасибо — мы на связи ✦';">
+        <input type="email" placeholder="you@university.edu" required/>
+        <button type="submit">Получить доступ</button>
+      </form>
+      <div class="cta-note" id="cta-note">Без спама · только запуск и важные обновления</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot">
+    <a class="brand" href="#top" style="font-size:18px">Asclit<span class="dot"></span></a>
+    <div class="mid"><a href="#about">Что это</a><a href="#program">Программа</a><a href="#how">Как учиться</a><a href="#cta">Ранний доступ</a></div>
+    <div>© 2026 · курс медицины</div>
+  </div>
+</footer>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+const PARTS={
+  FMA7274:{ru:'Стенка сердца (миокард)',lat:'paries cordis',col:0x8f1717,type:'muscle'},
+  FMA3736:{ru:'Восходящая аорта',lat:'aorta ascendens',col:0xcf4636,type:'artery'},
+  FMA3768:{ru:'Дуга аорты',lat:'arcus aortae',col:0xcf4636,type:'artery'},
+  FMA3895:{ru:'Огибающая ветвь левой венечной артерии',lat:'ramus circumflexus',col:0xe83b2c,type:'artery'},
+  FMA3802:{ru:'Правая венечная артерия',lat:'a. coronaria dextra',col:0xe83b2c,type:'artery'},
+  FMA4685:{ru:'Левая венечная артерия (ствол)',lat:'a. coronaria sinistra',col:0xe83b2c,type:'artery'},
+  FMA4706:{ru:'Венечный синус',lat:'sinus coronarius',col:0x2f6fb0,type:'vein'}
+};
+function makeMat(p){
+  if(p.type==='vein') return new THREE.MeshPhysicalMaterial({color:p.col,roughness:0.45,metalness:0,clearcoat:0.5,clearcoatRoughness:0.4,sheen:0.4,sheenColor:new THREE.Color(0x6aa9d8),emissive:new THREE.Color(0x06121f),emissiveIntensity:0.25,envMapIntensity:1.0,side:THREE.DoubleSide});
+  if(p.type==='artery') return new THREE.MeshPhysicalMaterial({color:p.col,roughness:0.32,metalness:0,clearcoat:0.8,clearcoatRoughness:0.3,sheen:0.6,sheenColor:new THREE.Color(0xff7a66),emissive:new THREE.Color(0x2a0604),emissiveIntensity:0.25,envMapIntensity:1.1,side:THREE.DoubleSide});
+  return new THREE.MeshPhysicalMaterial({color:p.col,roughness:0.42,metalness:0,clearcoat:0.5,clearcoatRoughness:0.4,sheen:0.7,sheenColor:new THREE.Color(0xff5a4a),sheenRoughness:0.5,emissive:new THREE.Color(0x2a0505),emissiveIntensity:0.3,envMapIntensity:1.0,side:THREE.DoubleSide});
+}
+
+const canvas=document.getElementById('hero-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setClearColor(0x000000,0);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
+const scene=new THREE.Scene();const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
+const camera=new THREE.PerspectiveCamera(36,1,0.1,100);camera.position.set(0.2,0.1,5);
+const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.dampingFactor=0.06;
+controls.enablePan=false;controls.enableZoom=true;controls.minDistance=2.6;controls.maxDistance=8;
+controls.autoRotate=true;controls.autoRotateSpeed=0.9;controls.target.set(0,0,0);
+controls.addEventListener('start',()=>{controls.autoRotate=false;});
+const key=new THREE.DirectionalLight(0xfff0e6,1.5);key.position.set(3,5,4);scene.add(key);
+const rim=new THREE.DirectionalLight(0xff3b30,2.2);rim.position.set(-4,1.5,-4);scene.add(rim);
+const cyan=new THREE.DirectionalLight(0x5ad1e6,0.8);cyan.position.set(4,-1,-3);scene.add(cyan);
+scene.add(new THREE.AmbientLight(0x1a1420,0.5));
+const pt=new THREE.PointLight(0xff3b30,1.0,10,2);pt.position.set(1.4,0.4,2.6);scene.add(pt);
+const rock=new THREE.Group();scene.add(rock);
+
+let PARTLIST=[],EXPLODE_D=1.0;
+new GLTFLoader().load('public_heart.glb',(g)=>{
+  const root=g.scene;
+  root.traverse(o=>{ if(o.isMesh){ const meta=PARTS[o.name]||PARTS[o.parent&&o.parent.name]; o.material=makeMat(meta||{col:0xa33,type:'muscle'}); o.userData.meta=meta; o.userData.baseEmiss=o.material.emissiveIntensity; }});
+  const b=new THREE.Box3().setFromObject(root);root.position.sub(b.getCenter(new THREE.Vector3()));
+  const fix=new THREE.Group();fix.add(root);fix.rotation.set(1.32,3.14,0);
+  const b2=new THREE.Box3().setFromObject(fix);fix.position.sub(b2.getCenter(new THREE.Vector3()));
+  fix.scale.setScalar(3.0/Math.max(...b2.getSize(new THREE.Vector3()).toArray()));rock.add(fix);
+  // collect parts and compute explode directions in their parent's local space
+  const parts=[];root.traverse(o=>{if(o.isMesh)parts.push(o);});
+  const centers=[];
+  parts.forEach(p=>{p.geometry.computeBoundingBox();const c=p.geometry.boundingBox.getCenter(new THREE.Vector3()).applyMatrix4(p.matrix);p.userData.c=c;p.userData.base=p.position.clone();centers.push(c);});
+  let ctr=null;parts.forEach(p=>{if(p.name==='FMA7274'||(p.parent&&p.parent.name==='FMA7274'))ctr=p.userData.c.clone();});
+  if(!ctr){ctr=new THREE.Vector3();centers.forEach(c=>ctr.add(c));ctr.divideScalar(centers.length||1);}
+  let maxd=0;centers.forEach(c=>{maxd=Math.max(maxd,c.distanceTo(ctr));});
+  EXPLODE_D=Math.min(Math.max(maxd*0.5,0.3),0.85);
+  parts.forEach(p=>{const d=p.userData.c.clone().sub(ctr);if(d.length()<1e-3)d.set(0,0.05,0);p.userData.dir=d.normalize();});
+  PARTLIST=parts;
+});
+
+let composer;function build(w,h){composer=new EffectComposer(renderer);composer.addPass(new RenderPass(scene,camera));composer.addPass(new UnrealBloomPass(new THREE.Vector2(w,h),0.5,0.75,0.82));composer.addPass(new OutputPass());}
+function size(){const w=canvas.clientWidth||1,h=canvas.clientHeight||1;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(!composer)build(w,h);else composer.setSize(w,h);}
+new ResizeObserver(size).observe(canvas);
+
+// explode slider
+const erange=document.getElementById('explodeRange');
+erange.addEventListener('input',()=>{controls.autoRotate=false;const s=erange.value/100;PARTLIST.forEach(p=>{p.position.copy(p.userData.base).addScaledVector(p.userData.dir,s*EXPLODE_D);});});
+
+// click to select + label
+const ray=new THREE.Raycaster();const ndc=new THREE.Vector2();let down=null,sel=null;
+const plName=document.getElementById('plName'),plLat=document.getElementById('plLat'),plBox=document.getElementById('partLabel');
+canvas.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
+canvas.addEventListener('pointermove',e=>{if(!PARTLIST.length)return;const r=canvas.getBoundingClientRect();ndc.x=((e.clientX-r.left)/r.width)*2-1;ndc.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(ndc,camera);canvas.style.cursor=ray.intersectObjects(PARTLIST,false).length?'pointer':'grab';});
+canvas.addEventListener('pointerup',e=>{ if(!down||!PARTLIST.length)return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(moved>6)return; const r=canvas.getBoundingClientRect();ndc.x=((e.clientX-r.left)/r.width)*2-1;ndc.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(ndc,camera);const hit=ray.intersectObjects(PARTLIST,false)[0]; if(sel){sel.material.emissiveIntensity=sel.userData.baseEmiss;} if(!hit){sel=null;plName.textContent='Нажми на часть сердца';plLat.textContent='кликни, чтобы узнать название';plBox.classList.remove('active');return;} sel=hit.object; sel.material.emissiveIntensity=0.9; const m=sel.userData.meta||{ru:sel.name,lat:''}; plName.textContent=m.ru; plLat.textContent=m.lat; plBox.classList.add('active'); });
+
+const clock=new THREE.Clock();
+function loop(){requestAnimationFrame(loop);const t=clock.getElapsedTime();const ph=(t%1.0)/1.0;let beat=0;if(ph<0.12)beat=Math.sin(ph/0.12*Math.PI)*0.03;else if(ph>0.2&&ph<0.32)beat=Math.sin((ph-0.2)/0.12*Math.PI)*0.018;const ex=erange?erange.value/100:0;rock.scale.setScalar(1+beat*(1-ex));rock.position.y=Math.sin(t*0.6)*0.05;pt.intensity=1+beat*7;controls.update();if(composer)composer.render();else renderer.render(scene,camera);}
+size();loop();
+
+/* dust particles */
+const dc=document.getElementById('dust');const dx=dc.getContext('2d');let DP=[];
+function dsz(){dc.width=innerWidth;dc.height=innerHeight;DP=Array.from({length:60},()=>({x:Math.random()*dc.width,y:Math.random()*dc.height,r:Math.random()*1.4+.3,s:Math.random()*.3+.05,o:Math.random()*.5+.1}));}
+function ddraw(){dx.clearRect(0,0,dc.width,dc.height);for(const p of DP){p.y-=p.s;if(p.y<-5)p.y=dc.height+5;dx.beginPath();dx.arc(p.x,p.y,p.r,0,7);dx.fillStyle='rgba(255,140,120,'+p.o+')';dx.fill();}requestAnimationFrame(ddraw);}
+addEventListener('resize',dsz);dsz();ddraw();
+
+/* progress + reveal */
+addEventListener('scroll',()=>{const h=document.documentElement;document.getElementById('prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';});
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
