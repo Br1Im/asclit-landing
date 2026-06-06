@@ -59,7 +59,7 @@ a{color:inherit;text-decoration:none}
 .wrap{position:relative;z-index:5;max-width:1320px;margin:0 auto;padding:0 40px}
 
 .hero{position:relative;z-index:5;min-height:100svh;display:flex;align-items:center}
-#hero-canvas{position:absolute;top:0;right:-2%;width:58%;height:100%;z-index:1;cursor:grab;touch-action:none}
+#hero-canvas{position:absolute;top:50%;right:2%;width:50%;height:90%;transform:translateY(-50%);z-index:1;cursor:grab;touch-action:none}
 #hero-canvas:active{cursor:grabbing}
 .hero-in{position:relative;z-index:2;pointer-events:none;max-width:1320px;margin:0 auto;padding:0 40px;width:100%}
 .hero-in a,.hero-in button{pointer-events:auto}
@@ -85,8 +85,19 @@ h1 .ser{font-weight:400;letter-spacing:-.01em;background:linear-gradient(120deg,
 @keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 
 @media(max-width:980px){
-  #hero-canvas{width:100%;right:0;opacity:.85;top:auto;bottom:0;height:50%}
-  .hero{flex-direction:column;justify-content:center}
+  #hero-canvas{position:absolute;top:auto;bottom:0;right:0;left:0;width:100%;height:55%;transform:none;opacity:.8}
+  .hero{flex-direction:column;justify-content:flex-start;padding-top:120px;min-height:100svh}
+  .hero-in{z-index:3}
+  .scrollcue{display:none}
+}
+@media(max-width:560px){
+  .hero{padding-top:100px}
+  #hero-canvas{height:50%}
+  h1{font-size:clamp(36px,11vw,60px)!important}
+  .sub{font-size:16px}
+  .btn-p{padding:16px 28px;font-size:14px}
+  .btn-s{padding:10px 16px;font-size:13px}
+  .tagline{font-size:11px;padding:6px 14px}
 }
 
 .marq{position:relative;z-index:5;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:22px 0;overflow:hidden;background:rgba(255,255,255,.008)}
@@ -182,8 +193,23 @@ footer{position:relative;z-index:5;border-top:1px solid var(--line);padding:44px
   .steps{grid-template-columns:1fr}
   h1{font-size:clamp(42px,12vw,76px)}
   .wrap,.hero-in{padding:0 24px}
+  section{padding:100px 0}
+  .feat-head{flex-direction:column;align-items:flex-start}
+  .cta-box{padding:60px 24px}
+  .form{flex-direction:column;align-items:stretch}
+  .form input{min-width:0}
+  .form button{width:100%}
 }
-@media(max-width:560px){.cards,.prog-grid,.stats{grid-template-columns:1fr}}
+@media(max-width:560px){
+  .cards,.prog-grid,.stats{grid-template-columns:1fr}
+  section{padding:70px 0}
+  .card{min-height:auto}
+  .manifesto{font-size:clamp(22px,6vw,36px)}
+  .stats .stat{padding:24px 18px}
+  .stat .v{font-size:clamp(32px,9vw,44px)}
+  .foot{flex-direction:column;text-align:center;gap:16px}
+  .foot .mid{flex-wrap:wrap;justify-content:center;gap:16px}
+}
 </style>
 </head>
 <body>
