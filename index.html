@@ -130,6 +130,18 @@ h2 .r{color:var(--red)}
 .msg.a .who{color:var(--red);opacity:1}
 .msg.a b{color:var(--red)}
 
+/* SOURCES STRIP */
+.src{border-top:1.5px solid var(--ink);border-bottom:1.5px solid var(--ink);overflow:hidden;display:flex;align-items:stretch}
+.src .src-lbl{flex:none;display:flex;align-items:center;padding:0 22px;background:var(--ink);color:var(--bg);font-family:'IBM Plex Mono';font-size:11px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.src .src-vp{overflow:hidden;flex:1;position:relative;display:flex;align-items:center}
+.src .src-vp::after{content:"";position:absolute;right:0;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,var(--bg));pointer-events:none}
+.src-track{display:flex;align-items:center;gap:0;white-space:nowrap;animation:marq 28s linear infinite;will-change:transform}
+.src:hover .src-track{animation-play-state:paused}
+.src-track span{font-family:'IBM Plex Mono';font-size:13px;color:var(--ink2);padding:16px 26px;display:inline-flex;align-items:center;gap:26px}
+.src-track span::after{content:"";width:5px;height:5px;background:var(--red);display:inline-block}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(max-width:760px){.src .src-lbl{font-size:9px;padding:0 12px}.src-track span{font-size:12px;padding:13px 16px;gap:16px}}
+
 /* TRUST */
 .trust-pts{display:grid;grid-template-columns:repeat(3,1fr);border-top:1.5px solid var(--ink);border-left:1px solid var(--line);margin-top:8px}
 .tp{padding:26px 24px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -252,6 +264,14 @@ footer{padding:40px 0 50px}
     <div class="coord" id="coord">X:0.00 Y:0.00 Z:6.00 · 3D</div>
   </div>
 </div></header>
+
+<div class="src">
+  <div class="src-lbl">Опираемся на лучшие учебники мира</div>
+  <div class="src-vp"><div class="src-track">
+    <span>Netter — Атлас анатомии</span><span>Gray's Anatomy</span><span>Guyton &amp; Hall — Физиология</span><span>Sobotta</span><span>Robbins — Патология</span><span>Harrison — Внутренние болезни</span><span>Lehninger — Биохимия</span><span>Katzung — Фармакология</span><span>Junqueira — Гистология</span>
+    <span>Netter — Атлас анатомии</span><span>Gray's Anatomy</span><span>Guyton &amp; Hall — Физиология</span><span>Sobotta</span><span>Robbins — Патология</span><span>Harrison — Внутренние болезни</span><span>Lehninger — Биохимия</span><span>Katzung — Фармакология</span><span>Junqueira — Гистология</span>
+  </div></div>
+</div>
 
 <div class="wrap"><div class="stats reveal" id="stats">
   <div class="st"><div class="n"><span class="cu" data-to="8">0</span><span class="red">+</span></div><div class="l">ключевых предметов</div></div>
