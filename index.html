@@ -59,8 +59,7 @@ a{color:inherit;text-decoration:none}
 .wrap{position:relative;z-index:5;max-width:1320px;margin:0 auto;padding:0 40px}
 
 .hero{position:relative;z-index:5;min-height:100svh;display:flex;align-items:center}
-#hero-canvas{position:absolute;top:50%;right:2%;width:50%;height:90%;transform:translateY(-50%);z-index:1;cursor:grab;touch-action:none}
-#hero-canvas:active{cursor:grabbing}
+#hero-canvas{position:absolute;top:50%;right:2%;width:50%;height:90%;transform:translateY(-50%);z-index:1;touch-action:none}
 .hero-in{position:relative;z-index:2;pointer-events:none;max-width:1320px;margin:0 auto;padding:0 40px;width:100%}
 .hero-in a,.hero-in button{pointer-events:auto}
 .tagline{display:inline-flex;align-items:center;gap:10px;padding:7px 18px;border:1px solid var(--line);border-radius:100px;
@@ -345,8 +344,6 @@ footer{position:relative;z-index:5;border-top:1px solid var(--line);padding:44px
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
 /* ═══ Point-cloud from anatomical heart GLB ═══ */
 const N = 24000;
 const canvas = document.getElementById('hero-canvas');
@@ -357,17 +354,6 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
 camera.position.set(0, 0.2, 4.8);
-
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
-controls.dampingFactor = 0.06;
-controls.enablePan = false;
-controls.minDistance = 2.8;
-controls.maxDistance = 8;
-controls.autoRotate = true;
-controls.autoRotateSpeed = 0.6;
-controls.target.set(0, 0, 0);
-controls.addEventListener('start', () => controls.autoRotate = false);
 
 /* ── Dot texture ── */
 function dotTex() {
@@ -577,8 +563,6 @@ function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
-  controls.update();
-
   if (geo) {
     const p = geo.attributes.position.array;
 
