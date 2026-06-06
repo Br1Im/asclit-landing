@@ -37,16 +37,16 @@
 #loader{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .6s ease}
 #loader.gone{opacity:0;pointer-events:none}
 .ld-in{width:min(440px,76vw);display:flex;flex-direction:column;align-items:center}
-.ld-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-.03em;display:flex;align-items:center;gap:9px;margin-bottom:24px}
+.ld-brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;letter-spacing:-.03em;display:flex;align-items:center;gap:9px;margin-bottom:30px}
 .ld-brand .sq{width:13px;height:13px;background:var(--red)}
-.ld-ecg{width:100%;height:62px;margin-bottom:22px}
-.ld-ecg path{fill:none;stroke:var(--red);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:420;stroke-dashoffset:420;animation:ecg 1.5s linear infinite}
-@keyframes ecg{to{stroke-dashoffset:-420}}
+.ld-pulse{width:74px;height:74px;margin-bottom:30px;transform-origin:center;animation:beat 1.15s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(232,53,30,.22))}
+.ld-pulse path{fill:var(--red)}
+@keyframes beat{0%{transform:scale(1)}12%{transform:scale(1.16)}24%{transform:scale(.99)}36%{transform:scale(1.1)}50%{transform:scale(1)}100%{transform:scale(1)}}
 .ld-meta{width:100%;display:flex;justify-content:space-between;font-family:'IBM Plex Mono';font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);margin-bottom:9px}
 .ld-meta #ldpct{color:var(--ink);font-variant-numeric:tabular-nums}
 .ld-bar{width:100%;height:3px;background:var(--line)}
 .ld-fill{height:100%;background:var(--red);transform-origin:left;transform:scaleX(0)}
-@media(prefers-reduced-motion:reduce){.ld-ecg path{animation:none;stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.ld-pulse{animation:none}}
 html{scroll-behavior:smooth}
 body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
 .mono{font-family:'IBM Plex Mono',monospace}
@@ -295,7 +295,7 @@ footer{padding:40px 0 50px}
 <div id="loader">
   <div class="ld-in">
     <div class="ld-brand"><span class="sq"></span>ASCLIT</div>
-    <svg class="ld-ecg" viewBox="0 0 300 64" preserveAspectRatio="none"><path d="M0 32 H58 l6 0 l5 -17 l6 31 l6 -23 l5 9 H140 l6 0 l5 -17 l6 31 l6 -23 l5 9 H300"/></svg>
+    <svg class="ld-pulse" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 86 C16 60 8 38 22 24 C34 12 48 20 50 32 C52 20 66 12 78 24 C92 38 84 60 50 86 Z"/></svg>
     <div class="ld-meta"><span>// Загрузка 3D-модели</span><span id="ldpct">00%</span></div>
     <div class="ld-bar"><div class="ld-fill" id="ldfill"></div></div>
   </div>
@@ -444,14 +444,37 @@ rnd.setClearColor(0x000000,0);rnd.setPixelRatio(Math.min(devicePixelRatio,2));
 const scene=new THREE.Scene();
 const cam=new THREE.PerspectiveCamera(40,1,0.1,100);cam.position.set(0,0,6);
 const grp=new THREE.Group();grp.rotation.set(0,Math.PI/2,0);scene.add(grp);
-/* loader control */
+/* loader control — smooth, time-based, graceful finish (no stall, no jump) */
 const ld=document.getElementById('loader'),ldfill=document.getElementById('ldfill'),ldpct=document.getElementById('ldpct');
-let lp=0,ltarget=0,lDone=false;
-const lset=p=>{ltarget=Math.max(ltarget,Math.min(1,p));};
-(function lanim(){lp+=(ltarget-lp)*0.12;if(!lDone&&lp>0.9)lp=0.9;const v=Math.round(lp*100);if(ldpct)ldpct.textContent=String(v).padStart(2,'0')+'%';if(ldfill)ldfill.style.transform='scaleX('+lp.toFixed(4)+')';if(lp<0.999||!lDone)requestAnimationFrame(lanim);})();
-const creep=setInterval(()=>{if(!lDone)lset(Math.min(0.85,ltarget+0.035));},170);
-function hideLoader(){if(lDone)return;lDone=true;clearInterval(creep);lset(1);setTimeout(()=>{if(ld){ld.classList.add('gone');setTimeout(()=>ld&&ld.remove(),700);}},480);}
-setTimeout(hideLoader,12000); // safety fallback
+const lt0=performance.now();
+const MIN_MS=1600;             // guarantee a smooth, unhurried fill even if the model is cached
+let loaded=false,ready=false,finished=false,fStart=0,fFrom=0,lastP=0;
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeIO=x=>x<0.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+function paint(p){lastP=p;const v=Math.round(p*100);if(ldpct)ldpct.textContent=String(v).padStart(2,'0')+'%';if(ldfill)ldfill.style.transform='scaleX('+p.toFixed(4)+')';}
+function lanim(now){
+  const el=now-lt0;
+  if(!ready&&loaded&&el>=MIN_MS)ready=true;   // latch: only finish once loaded AND min time passed
+  let p;
+  if(!ready){
+    // smooth approach to ~90% over MIN_MS, then gentle asymptotic crawl (never hard-stalls)
+    const k=Math.min(1,el/MIN_MS);
+    p=easeIO(k)*0.9;
+    const extra=Math.max(0,(el-MIN_MS)/900);   // slow crawl 0.90 -> ~0.97 if load takes longer
+    p+=(1-Math.exp(-extra))*0.07;
+  }else{
+    if(!fStart){fStart=now;fFrom=lastP;}
+    const fk=Math.min(1,(now-fStart)/540);
+    p=fFrom+(1-fFrom)*easeOut(fk);              // smooth ramp to 100%
+    if(fk>=1&&!finished){finished=true;ld&&ld.classList.add('gone');setTimeout(()=>ld&&ld.remove(),700);}
+  }
+  paint(p);
+  if(!finished)requestAnimationFrame(lanim);
+}
+requestAnimationFrame(lanim);
+function hideLoader(){loaded=true;}            // model ready -> allow graceful finish
+setTimeout(hideLoader,12000);                  // safety fallback
+const lset=()=>{};                             // progress is time-driven; onProgress kept as no-op
 
 new GLTFLoader().load('heart_new.glb',(g)=>{
  const root=g.scene;root.updateMatrixWorld(true);
