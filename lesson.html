@@ -1,0 +1,231 @@
+<!doctype html><html lang="ru"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Asclit · Сердце — интерактивный атлас</title>
+<meta name="description" content="Интерактивный 3D-атлас сердца: вращай модель, делай срез, изучай анатомию с латинской номенклатурой и источниками. Понимай, а не зубри."/>
+<link rel="icon" href="favicon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Spectral:ital,wght@0,400;0,500;1,400&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#efe7d2;--pap:#faf5e9;--ink:#3a3326;--mut:#9a8c70;--line:#e3d6bb;--red:#b0392a;--plum:#7d6aa6}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:'Spectral',serif;overflow:hidden}
+.disp{font-family:'Cormorant Garamond',serif}.script{font-family:'Caveat',cursive}
+.lbl{font-size:10px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}
+.layout{display:grid;grid-template-rows:58px 1fr;height:100%}
+.top{display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--line)}
+.brand{font-family:'Cormorant Garamond';font-style:italic;font-weight:600;font-size:24px;text-decoration:none;color:var(--ink)}.brand .h{color:var(--red);font-style:normal}
+.run{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.run a{color:var(--mut);text-decoration:none;border-bottom:1px solid var(--line)}
+.main{display:grid;grid-template-columns:1.15fr 1fr;min-height:0}
+.left{position:relative;border-right:1px solid var(--line);background:radial-gradient(120% 90% at 40% 35%,#f6f0e0,#e9dec4);overflow:hidden;touch-action:none}
+#hc{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#hc:active{cursor:grabbing}
+.tag{position:absolute;top:20px;left:24px;z-index:3;pointer-events:none}
+.tag h1{font-family:'Cormorant Garamond';font-weight:600;font-size:42px;line-height:.95}
+.tag .s{font-family:'Cormorant Garamond';font-style:italic;font-size:17px;color:var(--mut)}
+.ctrl{position:absolute;right:22px;top:22px;z-index:4;background:var(--pap);border:1px solid var(--line);border-radius:12px;padding:11px 12px;width:158px;box-shadow:0 3px 12px rgba(120,100,60,.10)}
+.seg{display:flex;gap:5px;margin:7px 0 9px}
+.seg b{flex:1;height:30px;border:1px solid var(--line);border-radius:7px;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:13px;cursor:pointer;user-select:none}
+.seg b.on{background:#eef0e6;border-color:#c3cba8;color:#5f7a45}
+.tog{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;margin-top:7px;cursor:pointer;user-select:none}
+.sw{width:34px;height:19px;border-radius:11px;background:#d3c6aa;position:relative;transition:background .18s;flex:none}
+.sw::after{content:"";position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .18s;box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.sw.on{background:var(--red)}.sw.on::after{left:17px}
+.hint{position:absolute;left:24px;bottom:24px;z-index:3;font-family:'Caveat',cursive;font-size:17px;color:var(--plum);pointer-events:none;transition:opacity .4s}
+.toolbar{position:absolute;bottom:22px;right:22px;z-index:4;display:flex;gap:7px}
+.tbtn{font-size:11px;color:var(--ink);background:var(--pap);border:1px solid var(--line);border-radius:8px;padding:7px 11px;cursor:pointer;user-select:none}
+.tbtn.on{border-color:var(--red);color:var(--red);background:#f6ece4}
+/* pins */
+#pins{position:absolute;inset:0;z-index:3;transition:opacity .25s}
+.pin{position:absolute;display:flex;align-items:center;gap:7px;transform:translate(-50%,-50%);font-family:'Cormorant Garamond';font-size:15px;cursor:pointer}
+.pin .n{width:21px;height:21px;border-radius:50%;border:1.5px solid var(--red);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:12px;font-family:'Spectral';background:var(--pap);flex:none}
+.pin .la{font-style:italic;background:#faf5e9cc;padding:1px 6px;border-radius:4px;white-space:nowrap}
+.pin.sel .n{background:var(--red);color:#fff}
+/* right reading */
+.right{padding:26px 36px;overflow-y:auto}
+.right .sec{color:var(--red);font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px}
+.right h2{font-family:'Cormorant Garamond';font-weight:600;font-size:29px;line-height:1.05;margin-bottom:12px}
+.cols{column-count:2;column-gap:28px;column-rule:1px solid var(--line)}
+.cols p{font-size:13.5px;line-height:1.58;margin-bottom:10px;text-align:justify;hyphens:auto}
+.cols p em{font-style:italic}.cols sup{color:var(--red);font-size:.7em}
+.cols .la{font-family:'Cormorant Garamond';font-style:italic}
+.card{break-inside:avoid;background:var(--pap);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin:4px 0 12px}
+.card .ct{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.pill{font-size:9px;letter-spacing:.06em;border:1px solid #b6cca0;color:#4f8a52;border-radius:20px;padding:2px 8px}
+.dr{display:grid;grid-template-columns:1fr auto;font-size:13px;padding:5px 0;border-top:1px solid var(--line);align-items:baseline}
+.dr:first-of-type{border-top:0}.dr .k{color:var(--mut)}.dr .v{font-weight:500}
+.refs{break-inside:avoid;border-top:1px solid var(--ink);margin-top:6px;padding-top:8px}
+.refs .rt{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.refs li{font-size:10.5px;line-height:1.45;margin-left:16px;color:#4a4234;margin-bottom:4px}
+.refs em{font-style:italic}
+.loader{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(120% 90% at 40% 35%,#f6f0e0,#e9dec4);transition:opacity .6s}
+.loader.hide{opacity:0;pointer-events:none}
+.loader .lh{color:var(--red);font-size:30px;animation:bp 0.85s ease-in-out infinite}
+@keyframes bp{0%,100%{transform:scale(1)}18%{transform:scale(1.16)}36%{transform:scale(1)}}
+.loader .lt{font-family:'Caveat',cursive;font-size:18px;color:var(--plum);margin-top:8px}
+@media(max-width:860px){.main{grid-template-columns:1fr;grid-template-rows:54vh 1fr}.cols{column-count:1}}
+</style></head>
+<body>
+<div class="layout">
+  <div class="top">
+    <a href="index.html" class="brand"><span class="h">&#10084;</span> Asclit</a>
+    <div class="run">Атлас &middot; Cardiologia &middot; &sect;&nbsp;1.2 Анатомия сердца &nbsp;&middot;&nbsp; <a href="index.html">&larr; на главную</a></div>
+  </div>
+  <div class="main">
+    <!-- LEFT: live 3D -->
+    <div class="left" id="stage">
+      <canvas id="hc"></canvas>
+      <div class="tag"><h1>Сердце</h1><div class="s">Cor &middot; facies anterior</div></div>
+      <div class="ctrl">
+        <span class="lbl">Режим</span>
+        <div class="seg" id="seg"><b data-m="0" class="on" title="Контур">&#9636;</b><b data-m="1" title="Каркас">&#9673;</b><b data-m="2" title="Точки">&#9635;</b></div>
+        <div class="tog" id="togCut">Срез <span class="sw"></span></div>
+        <div class="tog" id="togPins">Метки <span class="sw on"></span></div>
+      </div>
+      <div id="pins"></div>
+      <div class="hint" id="hint">тяни &mdash; вращай &middot; колесо &mdash; зум</div>
+      <div class="toolbar">
+        <span class="tbtn" id="btnSpin">&#8635; Вращать</span>
+        <span class="tbtn on" id="btnIso">&#9678; Каркас</span>
+        <span class="tbtn" id="btnReset">&#8634; Сброс</span>
+      </div>
+      <div class="loader" id="loader"><div class="lh">&#10084;</div><div class="lt">загружаю 3D-модель…</div></div>
+    </div>
+    <!-- RIGHT: reading -->
+    <div class="right">
+      <div class="sec">1.2 &middot; Общее строение</div>
+      <h2>Четыре камеры, два круга</h2>
+      <div class="cols">
+        <p>Сердце (<em>cor</em>) расположено в среднем средостении и заключено в перикард. Это четырёхкамерный мышечный насос: предсердия (<em>atria</em>) принимают кровь, желудочки (<em>ventriculi</em>) изгоняют её в большой и малый круги кровообращения.<sup>1</sup></p>
+        <p>Стенка состоит из трёх слоёв &mdash; внутреннего <em>endocardium</em>, среднего рабочего <em>myocardium</em> и наружного <em>epicardium</em> (висцеральный листок перикарда). Толщина миокарда максимальна в левом желудочке (&asymp;10&ndash;12&nbsp;мм), потому что он работает против высокого сопротивления большого круга.<sup>2</sup></p>
+        <div class="card">
+          <div class="ct"><span>Левый желудочек &middot; <span class="la">ventr. sinister</span></span><span class="pill">НОРМА</span></div>
+          <div class="dr"><span class="k">Толщина стенки</span><span class="v">10&ndash;12 мм</span></div>
+          <div class="dr"><span class="k">Давление, сист.</span><span class="v">~120 мм рт.ст.</span></div>
+          <div class="dr"><span class="k">Ударный объём</span><span class="v">~70 мл</span></div>
+          <div class="dr"><span class="k">Фракция выброса</span><span class="v">55&ndash;70 %</span></div>
+        </div>
+        <p>Однонаправленный ток крови обеспечивает клапанный аппарат: атриовентрикулярные клапаны (<em>valva tricuspidalis</em> справа, <em>valva mitralis</em> слева) и полулунные клапаны аорты и лёгочного ствола. Закрытие AV-клапанов в начале систолы формирует I тон сердца (S&#8321;).<sup>3</sup></p>
+        <p>Ритм задаёт <em>nodus sinuatrialis</em> (синусно-предсердный узел) &mdash; собственный водитель ритма. Возбуждение проводится через <em>nodus atrioventricularis</em> и пучок Гиса к волокнам Пуркинье, обеспечивая согласованное сокращение желудочков.<sup>4</sup></p>
+        <div class="refs"><div class="rt">Литература</div>
+          <ol>
+            <li>Standring S. <em>Gray&rsquo;s Anatomy.</em> 42nd ed. Elsevier, 2020.</li>
+            <li>Hall J.E. <em>Guyton &amp; Hall Textbook of Medical Physiology.</em> 14th ed.</li>
+            <li>Gray H. <em>Anatomy of the Human Body.</em> 20th ed.</li>
+            <li>FCAT. <em>Terminologia Anatomica.</em> Stuttgart: Thieme, 1998.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+
+const cv=document.getElementById('hc');
+const rnd=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+rnd.setClearColor(0,0);rnd.setPixelRatio(Math.min(devicePixelRatio,2));
+rnd.localClippingEnabled=true;
+const scene=new THREE.Scene();
+const cam=new THREE.PerspectiveCamera(40,1,0.1,100);cam.position.set(0,0,6);
+const grp=new THREE.Group();grp.rotation.set(0,Math.PI/2,0);scene.add(grp);
+
+const clip=new THREE.Plane(new THREE.Vector3(1,0,0),0); // cut plane (x>0 removed when active)
+let edgeMats=[],allMats=[];
+let edgeObjs=[],wireObjs=[],pointObjs=[];
+
+new GLTFLoader().load('heart_new.glb',(g)=>{
+ const root=g.scene;root.updateMatrixWorld(true);
+ const box=new THREE.Box3().setFromObject(root);
+ const ctr=box.getCenter(new THREE.Vector3());const size=box.getSize(new THREE.Vector3());
+ const sc=3.0/Math.max(size.x,size.y,size.z);
+ root.traverse(o=>{if(o.isMesh){
+   const em=new THREE.LineBasicMaterial({color:0xb0392a,transparent:true,opacity:0.92});
+   const e=new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry,18),em);
+   e.applyMatrix4(o.matrixWorld);grp.add(e);edgeObjs.push(e);edgeMats.push(em);allMats.push(em);
+   const wm=new THREE.LineBasicMaterial({color:0x6a4a30,transparent:true,opacity:0.07});
+   const w=new THREE.LineSegments(new THREE.WireframeGeometry(o.geometry),wm);
+   w.applyMatrix4(o.matrixWorld);grp.add(w);wireObjs.push(w);allMats.push(wm);
+   const pm=new THREE.PointsMaterial({color:0xb0392a,size:0.012,transparent:true,opacity:0.85,sizeAttenuation:true});
+   const pg=o.geometry.clone();const pts=new THREE.Points(pg,pm);
+   pts.applyMatrix4(o.matrixWorld);pts.visible=false;grp.add(pts);pointObjs.push(pts);allMats.push(pm);
+ }});
+ grp.scale.setScalar(sc);grp.position.set(-ctr.x*sc,-ctr.y*sc,-ctr.z*sc);
+ applyMode();applyClip();
+ const t0=performance.now();const fin=sc;grp.scale.set(0,0,0);
+ (function intro(){const k=Math.min(1,(performance.now()-t0)/750);const e=1-Math.pow(1-k,3);grp.scale.setScalar(fin*e);if(k<1)requestAnimationFrame(intro);})();
+ document.getElementById('loader').classList.add('hide');
+});
+
+function rs(){const w=cv.clientWidth||1,h=cv.clientHeight||1;rnd.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();}
+new ResizeObserver(rs).observe(cv);rs();
+
+/* ---- interaction ---- */
+let dragRY=0,dragRX=0,tRY=0,tRX=0,down=false,lx=0,ly=0,lastMove=0,spin=false,iso=true;
+let zoom=6,tzoom=6;
+cv.addEventListener('pointerdown',e=>{down=true;lx=e.clientX;ly=e.clientY;cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{if(!down)return;tRY+=(e.clientX-lx)*0.01;tRX+=(e.clientY-ly)*0.008;tRX=Math.max(-0.8,Math.min(0.8,tRX));lx=e.clientX;ly=e.clientY;lastMove=performance.now();});
+addEventListener('pointerup',()=>down=false);
+cv.addEventListener('wheel',e=>{e.preventDefault();tzoom=Math.max(3.4,Math.min(9,tzoom+e.deltaY*0.0025));},{passive:false});
+
+/* ---- modes ---- */
+let mode=0; // 0 contour(edges+faint wire) 1 wireframe 2 points
+const seg=document.getElementById('seg');
+function applyMode(){
+ edgeObjs.forEach(o=>o.visible=(mode!==2));
+ wireObjs.forEach((o,i)=>{o.visible=(mode!==2);o.material.opacity=mode===1?0.22:0.07;});
+ pointObjs.forEach(o=>o.visible=(mode===2));
+ [...seg.children].forEach(b=>b.classList.toggle('on',+b.dataset.m===mode));
+}
+seg.addEventListener('click',e=>{const b=e.target.closest('b');if(!b)return;mode=+b.dataset.m;applyMode();});
+
+/* ---- clip (срез) ---- */
+let cut=false;
+function applyClip(){allMats.forEach(m=>{m.clippingPlanes=cut?[clip]:[];m.needsUpdate=true;});}
+const togCut=document.getElementById('togCut');
+togCut.addEventListener('click',()=>{cut=!cut;togCut.querySelector('.sw').classList.toggle('on',cut);applyClip();});
+
+/* ---- pins ---- */
+const pinsEl=document.getElementById('pins');let pinsOn=true;
+const PINS=[{n:1,la:'Aorta',x:30,y:24},{n:2,la:'Truncus pulmonalis',x:64,y:30},{n:3,la:'Ventr. sinister',x:38,y:60},{n:4,la:'Apex cordis',x:50,y:88}];
+PINS.forEach(p=>{const el=document.createElement('div');el.className='pin';el.style.left=p.x+'%';el.style.top=p.y+'%';
+ el.innerHTML=`<span class="n">${p.n}</span><span class="la">${p.la}</span>`;
+ el.addEventListener('click',()=>{[...pinsEl.children].forEach(c=>c.classList.remove('sel'));el.classList.add('sel');});
+ pinsEl.appendChild(el);});
+const togPins=document.getElementById('togPins');
+togPins.addEventListener('click',()=>{pinsOn=!pinsOn;togPins.querySelector('.sw').classList.toggle('on',pinsOn);pinsEl.style.display=pinsOn?'block':'none';});
+
+/* ---- toolbar ---- */
+const btnSpin=document.getElementById('btnSpin'),btnIso=document.getElementById('btnIso'),btnReset=document.getElementById('btnReset');
+btnSpin.addEventListener('click',()=>{spin=!spin;btnSpin.classList.toggle('on',spin);});
+btnIso.addEventListener('click',()=>{iso=!iso;btnIso.classList.toggle('on',iso);wireObjs.forEach(o=>{if(mode!==2)o.visible=iso?true:false;});});
+btnReset.addEventListener('click',()=>{tRY=0;tRX=0;tzoom=6;});
+
+/* ---- loop ---- */
+const BEAT=0.85;const t0b=performance.now();
+const ck=new THREE.Clock();const hint=document.getElementById('hint');
+function loop(){requestAnimationFrame(loop);const t=ck.elapsedTime;
+ if(spin){tRY+=0.006;lastMove=performance.now();}
+ if(!down && !spin && performance.now()-lastMove>2600){tRY*=0.96;tRX*=0.96;}
+ dragRY+=(tRY-dragRY)*0.08;dragRX+=(tRX-dragRX)*0.08;
+ const sway=spin?0:Math.sin(t*0.5)*0.04;
+ grp.rotation.y=Math.PI/2+dragRY+sway;
+ grp.rotation.x=dragRX+(spin?0:Math.sin(t*0.4)*0.02);
+ zoom+=(tzoom-zoom)*0.1;cam.position.z=zoom;
+ const off=Math.abs(dragRY+sway);
+ const op=Math.max(0,1-off/0.6);
+ pinsEl.style.opacity=pinsOn?op.toFixed(2):'0';
+ pinsEl.style.pointerEvents=off>0.4?'none':'auto';
+ hint.style.opacity=(off>0.15||spin)?'0':'1';
+ const beat=((performance.now()-t0b)/1000/BEAT)%1;
+ const pulse=0.82+0.16*Math.max(0,Math.sin(beat*Math.PI*2-0.4))*(beat<0.4?1:0.2);
+ edgeMats.forEach(m=>m.opacity=pulse);
+ rnd.render(scene,cam);}
+loop();
+</script>
+</body></html>
